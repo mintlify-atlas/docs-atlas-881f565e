@@ -1,0 +1,109 @@
+{
+  "projectType": "framework",
+  "projectName": "dotly",
+  "projectDescription": "Modular and easy to customize dotfiles framework for macOS, Linux and WSL",
+  "theme": "aspen",
+  "primaryColor": "#8c949c",
+  "lightColor": "#242c3c",
+  "darkColor": "#c9cace",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/architecture",
+              "concepts/folder-structure",
+              "concepts/dot-command"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/versioning-configs",
+              "configuration/symlinks",
+              "configuration/shell-customization",
+              "configuration/theme"
+            ]
+          },
+          {
+            "group": "Scripts",
+            "pages": [
+              "scripts/overview",
+              "scripts/custom-scripts"
+            ]
+          },
+          {
+            "group": "Package Management",
+            "pages": [
+              "packages/overview",
+              "packages/installing",
+              "packages/managing"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/docker",
+              "advanced/troubleshooting",
+              "advanced/contributing"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Script Reference",
+        "groups": [
+          {
+            "group": "Built-in Scripts",
+            "pages": [
+              "reference/dotfiles",
+              "reference/git",
+              "reference/package",
+              "reference/self",
+              "reference/symlinks"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Modular script organization by context",
+    "Interactive fzf-based script selection",
+    "Cross-platform support (macOS, Linux, WSL)",
+    "Symlink-based configuration management",
+    "Package manager abstraction",
+    "Built on top of fast zim framework",
+    "Git-based dotfiles versioning",
+    "Customizable shell theme",
+    "One-command installation and restoration"
+  ],
+  "publicApiSurface": [
+    "dot - Main command dispatcher",
+    "dot <context> - List scripts in context",
+    "dot <context> <script> - Execute script",
+    "dot self install - Install dotly",
+    "dot self update - Update dotly",
+    "dot package add - Install package",
+    "dot package import - Import packages",
+    "dot package dump - Export packages",
+    "dot package update_all - Update all packages",
+    "dot git commit - Git commit helper",
+    "dot git pretty-diff - Pretty git diff",
+    "dot git pretty-log - Pretty git log",
+    "dot symlinks apply - Apply symlinks",
+    "installer script - Fresh installation",
+    "restorer script - Restore from existing repo"
+  ]
+}
