@@ -16,6 +16,9 @@ Scripts are organized into contexts (directories) based on their purpose:
   <Card title="git" icon="git-alt">
     Git utilities and workflow helpers
   </Card>
+  <Card title="docker" icon="docker">
+    Docker container utilities
+  </Card>
   <Card title="mac" icon="apple">
     macOS-specific utilities
   </Card>
@@ -208,6 +211,21 @@ dot git rm-file-history path/to/file
 ```
 </Accordion>
 
+### Docker Context
+
+<Accordion title="docker connect">
+Interactively connect to a running Docker container using fzf selection.
+
+```bash
+dot docker connect
+```
+
+This script:
+- Lists all running Docker containers
+- Presents them in an interactive fzf menu
+- Connects to the selected container with bash (or sh as fallback)
+</Accordion>
+
 ### Package Context
 
 <Accordion title="package add">
@@ -322,25 +340,50 @@ Applies symlinks from:
 Brew utilities for managing Homebrew packages.
 
 ```bash
-dot mac brew
+# List installed packages (leaves only)
+dot mac brew list_installed
+
+# Cleanup packages not in Brewfile
+dot mac brew cleanup [optional_brewfile_path]
 ```
+
+The cleanup command uses your Brewfile from `$DOTFILES_PATH/os/mac/brew/Brewfile` by default.
 </Accordion>
 
 <Accordion title="mac defaults">
-Utilities to view, import, and export macOS defaults.
+Utilities to view, import, and export macOS defaults (system preferences).
 
 ```bash
-dot mac defaults
+# View changed defaults compared to baseline
+dot mac defaults view_changed
+
+# Export all defaults to files
+dot mac defaults export [path_to]
+
+# Import defaults from files
+dot mac defaults import [path_from]
 ```
+
+Defaults are stored in `$DOTFILES_PATH/os/mac/settings` by default.
 </Accordion>
 
 ### Shell Context
 
 <Accordion title="shell zsh">
-ZSH helpers and utilities.
+ZSH optimization and maintenance utilities.
 
 ```bash
-dot shell zsh
+# Optimize ZSH performance
+dot shell zsh optimize
+
+# Test ZSH startup performance
+dot shell zsh test_performance
+
+# Reload completions
+dot shell zsh reload_completions
+
+# Clean ZSH cache files
+dot shell zsh clean_cache
 ```
 </Accordion>
 
