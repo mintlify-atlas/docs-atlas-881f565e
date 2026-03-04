@@ -1,0 +1,562 @@
+---
+title: The Dot Command
+description: Master the dot command - dotly's powerful script runner with interactive mode, context organization, and extensibility
+---
+
+## Overview
+
+The `dot` command is the core interface for dotly. It provides a unified way to run scripts from both the dotly framework and your personal dotfiles.
+
+```bash
+dot                           # Interactive mode with fzf
+dot <context>                # Browse scripts in a context
+dot <context> <script>       # Run a specific script
+dot <context> <script> [args...] # Run with arguments
+dot -h | --help              # Show help
+```
+
+<Info>
+  The `dot` command is located at `$DOTLY_PATH/bin/dot` and is automatically added to your PATH during installation.
+</Info>
+
+## Usage Modes
+
+### Interactive Mode
+
+Run `dot` without arguments to browse all available scripts using fzf:
+
+```bash
+dot
+```
+
+This displays an interactive menu where you can:
+- Browse all scripts across all contexts
+- Preview script help text
+- Search and filter by name
+- Execute scripts with live argument input
+
+<Accordion title="How interactive mode works">
+  From `bin/dot` (lines 37-38):
+  
+  ```bash
+  if args::has_no_args "$@"; then
+    fzf_prompt "$(dot::list_scripts_path)"
+  fi
+  ```
+  
+  The `fzf_prompt` function (lines 16-31):
+  1. Lists all executable scripts from both `$DOTLY_PATH` and `$DOTFILES_PATH`
+  2. Formats them as `<context> <script>`
+  3. Shows a preview pane with `dot <context> <script> -h`
+  4. Prompts for additional arguments
+  5. Executes the selected script
+</Accordion>
+
+### Context Browsing
+
+Run `dot` with just a context to browse scripts in that context:
+
+```bash
+dot git
+```
+
+This shows only git-related scripts with the same interactive interface.
+
+**Implementation:**
+
+```bash
+# From bin/dot (lines 39-40)
+elif args::total_is 1 "$@"; then
+  fzf_prompt "$(dot::list_scripts_path | grep "/$1/")"
+fi
+```
+
+### Direct Execution
+
+Run a specific script directly:
+
+```bash
+dot git commit "feat: add new feature"
+dot package add ripgrep
+dot symlinks apply
+```
+
+## Script Organization
+
+### Contexts
+
+Scripts are organized into contexts (directories) that group related functionality:
+
+**Default dotly contexts:**
+
+<CardGroup cols={2}>
+  <Card title="git" icon="git">
+    Git utilities (commit, amend, pretty-log, etc.)
+  </Card>
+  <Card title="package" icon="box">
+    Package management (add, update_all, import, dump)
+  </Card>
+  <Card title="self" icon="gear">
+    Dotly maintenance (install, update, debug, lint)
+  </Card>
+  <Card title="symlinks" icon="link">
+    Symlink management (apply)
+  </Card>
+  <Card title="dotfiles" icon="folder">
+    Dotfiles setup (create, import)
+  </Card>
+  <Card title="shell" icon="terminal">
+    Shell utilities (zsh helpers)
+  </Card>
+</CardGroup>
+
+**Creating custom contexts:**
+
+```bash
+# Create a new context directory
+mkdir -p $DOTFILES_PATH/scripts/deploy
+
+# Add scripts to it
+touch $DOTFILES_PATH/scripts/deploy/production
+chmod +x $DOTFILES_PATH/scripts/deploy/production
+
+# Now available as:
+dot deploy production
+```
+
+### Script Discovery
+
+The `dot` command discovers scripts by searching both repositories:
+
+```bash
+# From scripts/core/dot.sh (lines 1-6)
+dot::list_contexts() {
+  dotly_contexts=$(ls "$DOTLY_PATH/scripts")
+  dotfiles_contexts=$(ls "$DOTFILES_PATH/scripts")
+  
+  echo "$dotly_contexts" "$dotfiles_contexts" | grep -v core | sort -u
+}
+```
+
+**Available contexts:**
+
+```bash
+# List all contexts
+dot::list_contexts
+
+# Output:
+# docker
+# dotfiles
+# git
+# package
+# self
+# shell
+# symlinks
+# (+ your custom contexts)
+```
+
+**Scripts in a context:**
+
+```bash
+# From scripts/core/dot.sh (lines 8-15)
+dot::list_context_scripts() {
+  context="$1"
+  
+  dotly_scripts=$(ls -p "$DOTLY_PATH/scripts/$context" 2>/dev/null | grep -v '/')
+  dotfiles_scripts=$(ls -p "$DOTFILES_PATH/scripts/$context" 2>/dev/null | grep -v '/')
+  
+  echo "$dotly_scripts" "$dotfiles_scripts" | sort -u
+}
+```
+
+## Script Resolution
+
+When you run `dot <context> <script>`, dotly searches for the script in this priority order:
+
+<Steps>
+  <Step title="Check your dotfiles first">
+    ```bash
+    $DOTFILES_PATH/scripts/<context>/<script>
+    ```
+    Your personal scripts take precedence.
+  </Step>
+  
+  <Step title="Fall back to dotly framework">
+    ```bash
+    $DOTLY_PATH/scripts/<context>/<script>
+    ```
+    Use the default dotly script if you don't have a custom one.
+  </Step>
+  
+  <Step title="Execute the found script">
+    ```bash
+    "${script_path}/scripts/${context}/${script}" "$@"
+    ```
+    Run with all provided arguments.
+  </Step>
+</Steps>
+
+**Implementation:**
+
+```bash
+# From bin/dot (lines 42-56)
+context="$1"
+script="$2"
+shift 2
+
+script_path=""
+script_exist "$DOTFILES_PATH" "$context" "$script" && script_path="$DOTFILES_PATH"
+script_exist "$DOTLY_PATH" "$context" "$script" && script_path="$DOTLY_PATH"
+
+if [ -z "$script_path" ]; then
+  output::error "The script <$context / $script> doesn't exist"
+  exit 1
+fi
+
+"${script_path}/scripts/${context}/${script}" "$@"
+```
+
+<Tip>
+  This resolution strategy allows you to override any default dotly script by creating a script with the same name in your dotfiles.
+</Tip>
+
+## Script Requirements
+
+For a script to work with the `dot` command:
+
+### 1. Executable Permission
+
+```bash
+chmod +x $DOTFILES_PATH/scripts/<context>/<script>
+```
+
+### 2. Shebang Line
+
+```bash
+#!/usr/bin/env bash
+```
+
+### 3. Core Library Import
+
+```bash
+source "$DOTLY_PATH/scripts/core/_main.sh"
+```
+
+This loads all core utilities:
+- `output::*` - Colored output functions
+- `platform::*` - OS detection
+- `args::*` - Argument parsing
+- `docs::parse` - Help text parsing
+
+### 4. Documentation Comments (Optional but Recommended)
+
+```bash
+##? Brief description of the script
+##?
+##? Usage:
+##?    <context> <script> [options]
+##?
+##? Options:
+##?    -f, --force    Force the operation
+##?    -h, --help     Show this help
+
+docs::parse "$@"
+```
+
+<Accordion title="How documentation parsing works">
+  The `docs::parse` function uses [docpars](https://github.com/denisidoro/docpars) to:
+  
+  1. Extract `##?` comment lines from the script
+  2. Parse them into a help message
+  3. Generate argument parsing code
+  4. Handle `-h` and `--help` flags automatically
+  
+  When you run `dot <context> <script> -h`, it displays the formatted help text.
+</Accordion>
+
+## Example Scripts
+
+### Basic Script
+
+```bash
+#!/usr/bin/env bash
+# File: $DOTFILES_PATH/scripts/greeting/hello
+
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+##? Say hello to someone
+##?
+##? Usage:
+##?    greeting hello <name>
+docs::parse "$@"
+
+name="$1"
+
+output::answer "Hello, $name!"
+```
+
+**Usage:**
+
+```bash
+dot greeting hello "World"
+# Output: Hello, World!
+```
+
+### Script with Options
+
+```bash
+#!/usr/bin/env bash
+# File: $DOTFILES_PATH/scripts/deploy/staging
+
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+##? Deploy application to staging environment
+##?
+##? Usage:
+##?    deploy staging [options]
+##?
+##? Options:
+##?    --dry-run      Show what would be deployed without deploying
+##?    --skip-tests   Skip running tests before deploy
+##?    -h, --help     Show this help
+docs::parse "$@"
+
+if [ "$dry_run" = true ]; then
+  output::answer "Dry run mode - no actual deployment"
+fi
+
+if [ "$skip_tests" != true ]; then
+  output::answer "Running tests..."
+  npm test || exit 1
+fi
+
+output::answer "Deploying to staging..."
+# Deployment logic here
+```
+
+**Usage:**
+
+```bash
+dot deploy staging
+dot deploy staging --dry-run
+dot deploy staging --skip-tests
+```
+
+### Platform-Specific Script
+
+```bash
+#!/usr/bin/env bash
+# File: $DOTFILES_PATH/scripts/setup/dev-tools
+
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+##? Install development tools
+##?
+##? Usage:
+##?    setup dev-tools
+docs::parse "$@"
+
+if platform::is_macos; then
+  output::answer "Installing macOS development tools..."
+  brew install ripgrep fd bat exa
+elif platform::is_linux; then
+  output::answer "Installing Linux development tools..."
+  sudo apt-get update
+  sudo apt-get install -y ripgrep fd-find bat
+else
+  output::error "Unsupported platform"
+  exit 1
+fi
+
+output::answer "Development tools installed!"
+```
+
+## Built-in Scripts Reference
+
+### Git Scripts
+
+```bash
+dot git commit              # Add all and commit
+dot git amend               # Amend last commit
+dot git pretty-log          # Interactive git log with fzf
+dot git pretty-diff         # Interactive git diff with fzf
+dot git changed-files       # Files changed since main branch
+dot git contributors        # List contributors with commit count
+dot git find "message"      # Find commits by message
+```
+
+### Package Scripts
+
+```bash
+dot package add <package>   # Install a package (auto-detects package manager)
+dot package update_all      # Update all packages
+dot package dump            # Export installed packages
+dot package import          # Import previously dumped packages
+```
+
+### Self Scripts
+
+```bash
+dot self install            # Install dotly and setup dotfiles
+dot self update             # Update dotly to latest version
+dot self debug              # Debug dotly (run alongside other commands)
+dot self lint               # Lint dotly bash scripts
+dot self static_analysis    # Run static analysis on dotly
+```
+
+### Symlinks Scripts
+
+```bash
+dot symlinks apply          # Apply all configured symlinks
+```
+
+### Dotfiles Scripts
+
+```bash
+dot dotfiles create         # Create dotfiles structure
+dot dotfiles import         # Import existing dotfiles
+```
+
+## Tips and Tricks
+
+### Alias for Frequently Used Commands
+
+```bash
+# In shell/aliases.sh
+alias gc='dot git commit'
+alias gp='dot git pretty-log'
+alias up='dot package update_all'
+alias sa='dot symlinks apply'
+```
+
+### Chain Multiple Commands
+
+```bash
+dot git commit "feat: new feature" && \
+dot git push && \
+dot package update_all
+```
+
+### Use in Scripts
+
+```bash
+#!/usr/bin/env bash
+# Your deployment script
+
+# Use dot commands within other scripts
+"$DOTLY_PATH/bin/dot" git commit "deploy: staging update"
+"$DOTLY_PATH/bin/dot" symlinks apply
+```
+
+### Tab Completion
+
+With zsh and dotly's completion setup, you get tab completion for:
+- Contexts: `dot <tab>`
+- Scripts: `dot git <tab>`
+
+```bash
+# Reload completions after adding new scripts
+dot shell zsh reload_completions
+```
+
+### Debug Script Execution
+
+Run the debug command in a separate terminal while executing other dot commands:
+
+```bash
+# Terminal 1
+dot self debug
+
+# Terminal 2
+dot git commit "test"
+```
+
+This shows detailed execution logs and helps troubleshoot issues.
+
+## Advanced Usage
+
+### Override Default Scripts
+
+Create a script in your dotfiles with the same context and name:
+
+```bash
+# Override the default git commit script
+cp $DOTLY_PATH/scripts/git/commit $DOTFILES_PATH/scripts/git/commit
+
+# Now edit your version
+vim $DOTFILES_PATH/scripts/git/commit
+```
+
+Your version will be used instead of the dotly default.
+
+### Script Dependencies
+
+Use `script::depends_on` to require certain commands:
+
+```bash
+#!/usr/bin/env bash
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+script::depends_on jq curl
+
+# Script will exit with error if jq or curl are not installed
+```
+
+### Conditional Execution
+
+```bash
+#!/usr/bin/env bash
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+if ! platform::is_macos; then
+  output::error "This script only works on macOS"
+  exit 1
+fi
+
+# macOS-specific logic here
+```
+
+## Core Utilities
+
+Scripts that source `$DOTLY_PATH/scripts/core/_main.sh` get access to:
+
+### Output Functions
+
+```bash
+output::answer "Success message"        # Green output
+output::error "Error message"          # Red output
+output::solution "Try this fix"        # Yellow output
+```
+
+### Platform Detection
+
+```bash
+platform::is_macos          # Returns 0 if macOS
+platform::is_linux          # Returns 0 if Linux
+platform::is_wsl            # Returns 0 if WSL
+platform::command_exists git # Returns 0 if command exists
+```
+
+### Argument Helpers
+
+```bash
+args::has_no_args "$@"      # True if no arguments
+args::total_is 2 "$@"       # True if exactly 2 arguments
+```
+
+### String Utilities
+
+```bash
+str::contains "haystack" "needle"  # True if needle in haystack
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="diagram-project" href="./architecture">
+    Learn how dotly works under the hood
+  </Card>
+  <Card title="Folder Structure" icon="folder" href="./folder-structure">
+    Understand dotfiles organization
+  </Card>
+</CardGroup>

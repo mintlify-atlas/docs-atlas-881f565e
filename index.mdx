@@ -1,97 +1,165 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "dotly - Modular Dotfiles Framework"
+description: "Simple and fast dotfiles framework for macOS, Linux and WSL"
+mode: "custom"
 ---
 
-## Setting up
+<div className="relative overflow-hidden dark:bg-[#0f1117] bg-white">
+  {/* Hero Section */}
+  <div className="relative py-20 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto">
+      <div className="text-center">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold dark:text-gray-100 text-gray-900 mb-6">
+          ⚡️ Simple and Fast Dotfiles Framework ⚡️
+        </h1>
+        <p className="text-lg sm:text-xl dark:text-gray-400 text-gray-600 max-w-3xl mx-auto mb-10">
+          The path to increasing your productivity on macOS, Linux and WSL. A modular framework built on top of zim, one of the fastest zsh frameworks available.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <a 
+            href="/quickstart" 
+            className="inline-flex items-center px-6 py-3 rounded-full text-base font-semibold bg-[#8c949c] text-white hover:bg-[#242c3c] transition-colors no-underline"
+          >
+            Get Started
+          </a>
+          <a 
+            href="/introduction" 
+            className="inline-flex items-center px-6 py-3 rounded-full text-base font-semibold border dark:border-[#27272a] border-gray-200 dark:bg-white/10 bg-gray-50 dark:text-gray-100 text-gray-900 dark:hover:border-[#8c949c] hover:border-[#8c949c] transition-colors no-underline"
+          >
+            Learn More
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-Get your documentation site up and running in minutes.
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-semibold dark:text-gray-100 text-gray-900 mb-4">
+    Quick Start
+  </h2>
+  <p className="dark:text-gray-400 text-gray-600 mb-8">
+    Get up and running with dotly in just a few minutes
+  </p>
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+  <Steps>
+    <Step title="Install dotly">
+      Run the installer script to set up dotly and create your dotfiles structure:
+      
+      ```bash curl
+      bash <(curl -s https://raw.githubusercontent.com/CodelyTV/dotly/HEAD/installer)
+      ```
+      
+      Or with wget:
+      
+      ```bash wget
+      bash <(wget -qO- https://raw.githubusercontent.com/CodelyTV/dotly/HEAD/installer)
+      ```
+    </Step>
+    
+    <Step title="Commit your dotfiles">
+      Create a new GitHub repository named `dotfiles` and push your initial configuration:
+      
+      ```bash
+      cd ~/.dotfiles
+      git remote add origin YOUR_DOTFILES_REPO_URL
+      git add -A
+      git commit -m "Initial commit"
+      git push origin main
+      ```
+    </Step>
+    
+    <Step title="Use the dot command">
+      Start using the `dot` command to manage scripts and configurations:
+      
+      ```bash
+      dot
+      ```
+      
+      This opens an interactive fzf menu with all available scripts. You can also run specific scripts:
+      
+      ```bash
+      dot package add neovim
+      dot git pretty-log
+      ```
+    </Step>
+  </Steps>
+</div>
 
-## Make it yours
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-semibold dark:text-gray-100 text-gray-900 mb-4">
+    Key Features
+  </h2>
+  <p className="dark:text-gray-400 text-gray-600 mb-8">
+    Everything you need to manage your development environment
+  </p>
 
-Design a docs site that looks great and empowers your users.
+  <CardGroup cols={2}>
+    <Card title="Modular Scripts" icon="puzzle-piece" href="/scripts/overview">
+      Organize scripts by context (git, package, self) for easy management and discovery
+    </Card>
+    <Card title="Cross-Platform" icon="laptop" href="/installation">
+      Works seamlessly on macOS, Linux, and Windows Subsystem for Linux (WSL)
+    </Card>
+    <Card title="Interactive CLI" icon="terminal" href="/concepts/dot-command">
+      Interactive fzf-based script selection with preview for quick access to commands
+    </Card>
+    <Card title="Package Management" icon="box" href="/packages/overview">
+      Abstract away package managers with unified commands across apt, brew, dnf, and more
+    </Card>
+    <Card title="Config Versioning" icon="code-branch" href="/configuration/versioning-configs">
+      Version your app configs with Git and symlinks for easy synchronization
+    </Card>
+    <Card title="Fast Shell" icon="bolt" href="/concepts/architecture">
+      Built on top of zim, one of the fastest zsh frameworks available
+    </Card>
+  </CardGroup>
+</div>
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-semibold dark:text-gray-100 text-gray-900 mb-4">
+    Explore Documentation
+  </h2>
+  <p className="dark:text-gray-400 text-gray-600 mb-8">
+    Learn how to customize and extend dotly
+  </p>
 
-## Create beautiful pages
+  <CardGroup cols={3}>
+    <Card title="Core Concepts" icon="book-open" href="/concepts/architecture">
+      Understand the architecture and folder structure
+    </Card>
+    <Card title="Configuration" icon="sliders" href="/configuration/versioning-configs">
+      Configure symlinks, shell, and theme customization
+    </Card>
+    <Card title="Script Reference" icon="file-code" href="/reference/dotfiles">
+      Browse all built-in scripts and commands
+    </Card>
+  </CardGroup>
+</div>
 
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <div className="dark:bg-[#1a1d27] bg-gray-50 rounded-2xl p-8 sm:p-12 dark:border dark:border-[#27272a] border border-gray-200">
+    <div className="text-center">
+      <h2 className="text-2xl sm:text-3xl font-semibold dark:text-gray-100 text-gray-900 mb-4">
+        Ready to boost your productivity?
+      </h2>
+      <p className="dark:text-gray-400 text-gray-600 mb-8 max-w-2xl mx-auto">
+        Join developers using dotly to manage their dotfiles across multiple machines and platforms
+      </p>
+      <div className="flex flex-wrap items-center justify-center gap-4">
+        <a 
+          href="/installation" 
+          className="inline-flex items-center px-6 py-3 rounded-full text-base font-semibold bg-[#8c949c] text-white hover:bg-[#242c3c] transition-colors no-underline"
+        >
+          Install Now
+        </a>
+        <a 
+          href="https://github.com/CodelyTV/dotly" 
+          className="inline-flex items-center px-6 py-3 rounded-full text-base font-semibold border dark:border-[#27272a] border-gray-200 dark:bg-white/10 bg-white dark:text-gray-100 text-gray-900 dark:hover:border-[#8c949c] hover:border-[#8c949c] transition-colors no-underline"
+        >
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

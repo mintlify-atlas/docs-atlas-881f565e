@@ -1,0 +1,304 @@
+---
+title: Self Scripts
+description: Scripts for managing and maintaining dotly itself
+---
+
+The `self` context provides scripts for managing dotly itself, including installation, updates, debugging, and code quality checks. You can also run these scripts using the `dotly` command directly instead of `dot self`.
+
+## Installation & Updates
+
+### install
+
+Installs dotly and sets up your dotfiles environment.
+
+**Usage:**
+
+```bash
+dot self install
+# or
+dotly install
+```
+
+**What it does:**
+
+Performs a complete dotly installation:
+
+1. **Creates dotfiles structure** - Sets up all necessary directories
+2. **Backs up existing files** - Saves `.bashrc`, `.zshrc`, `.zshenv`, etc.
+3. **Sets up symlinks** - Links dotfiles configs to their proper locations
+4. **Sets default shell** - Changes to zsh if not already set
+5. **Installs Zim framework** - Fast zsh framework for prompt and plugins
+6. **Installs completions** - Sets up shell completions
+7. **Runs restoration scripts** - Executes custom scripts from `restoration_scripts/`
+
+**Example:**
+
+```bash
+# First time setup
+dot self install
+```
+
+<Info>
+  The installer automatically detects your platform (macOS, Linux, WSL) and applies platform-specific configurations.
+</Info>
+
+**Dependencies:**
+
+The installer ensures these tools are available:
+- `docpars` - Documentation parser
+- `fzf` - Fuzzy finder
+- `zsh` - Z shell
+- `python` - Python interpreter
+
+### update
+
+Updates dotly to the latest stable release.
+
+**Usage:**
+
+```bash
+dot self update
+# or
+dotly update
+```
+
+**What it does:**
+
+- Pulls latest changes from the dotly repository
+- Updates git submodules recursively
+- Reloads zsh completions
+- Shows success message when complete
+
+**Example:**
+
+```bash
+# Update to latest version
+dot self update
+```
+
+<Note>
+  This updates the dotly framework itself, not your dotfiles. Your dotfiles customizations remain unchanged.
+</Note>
+
+## Debugging & Monitoring
+
+### debug
+
+Monitors dotly debug log in real-time.
+
+**Usage:**
+
+```bash
+dot self debug
+# or
+dotly debug
+```
+
+**What it does:**
+
+- Tails the dotly log file (`~/dotly.log` by default)
+- Shows real-time debug output
+- Useful for troubleshooting issues
+
+**Example:**
+
+```bash
+# Terminal 1 - Run a command
+dot package update_all
+
+# Terminal 2 - Watch debug output
+dot self debug
+```
+
+<Info>
+  The log file location can be customized with the `DOTLY_LOG_FILE` environment variable.
+</Info>
+
+## Code Quality
+
+### lint
+
+Lints bash scripts using shfmt.
+
+**Usage:**
+
+```bash
+dot self lint
+dot self lint --fix
+dot self lint --dotfiles
+dot self lint --fix --dotfiles
+# or
+dotly lint
+```
+
+**What it does:**
+
+- Checks bash script formatting
+- Shows formatting issues (default)
+- Automatically fixes issues (with `--fix`)
+- Checks dotfiles scripts (with `--dotfiles`)
+- Uses shfmt with indentation of 0 (tabs) and simplified formatting
+
+**Examples:**
+
+```bash
+# Check dotly scripts for formatting issues
+dot self lint
+
+# Fix dotly script formatting
+dot self lint --fix
+
+# Check your dotfiles scripts
+dot self lint --dotfiles
+
+# Fix your dotfiles scripts
+dot self lint --fix --dotfiles
+```
+
+**Dependency:**
+- Requires `shfmt` (install with `dot package add shfmt`)
+
+### static_analysis
+
+Runs static analysis on bash scripts using shellcheck.
+
+**Usage:**
+
+```bash
+dot self static_analysis
+dot self static_analysis --dotfiles
+# or
+dotly static_analysis
+```
+
+**What it does:**
+
+- Analyzes bash scripts for potential issues
+- Checks for common mistakes and anti-patterns
+- Shows warnings and errors
+- Checks dotfiles scripts (with `--dotfiles`)
+
+**Examples:**
+
+```bash
+# Analyze dotly scripts
+dot self static_analysis
+
+# Analyze your dotfiles scripts
+dot self static_analysis --dotfiles
+```
+
+**Shellcheck configuration:**
+- Shell: bash
+- Severity: warning and above
+- Ignored: SC1090 (source following), SC2010 (ls parsing), SC2154 (referenced but not assigned)
+
+**Dependency:**
+- Requires `shellcheck` (install with `dot package add shellcheck`)
+
+## Common Workflows
+
+<AccordionGroup>
+  <Accordion title="First time installation">
+    ```bash
+    # Clone dotly or run the installer
+    bash <(curl -s https://raw.githubusercontent.com/CodelyTV/dotly/HEAD/installer)
+    
+    # The installer automatically runs:
+    # - dot self install
+    # - Creates dotfiles structure
+    # - Sets up shell and symlinks
+    ```
+  </Accordion>
+
+  <Accordion title="Updating dotly">
+    ```bash
+    # Update to latest version
+    dot self update
+    
+    # Verify everything works
+    dot self debug
+    ```
+  </Accordion>
+
+  <Accordion title="Developing custom scripts">
+    ```bash
+    # Create a new script in your dotfiles
+    vim $DOTFILES_PATH/scripts/mycontext/myscript
+    
+    # Check formatting
+    dot self lint --dotfiles
+    
+    # Fix formatting issues
+    dot self lint --fix --dotfiles
+    
+    # Run static analysis
+    dot self static_analysis --dotfiles
+    
+    # Test your script
+    dot mycontext myscript
+    ```
+  </Accordion>
+
+  <Accordion title="Troubleshooting">
+    ```bash
+    # Start debug monitor in one terminal
+    dot self debug
+    
+    # Run problematic command in another terminal
+    dot package add some-package
+    
+    # Check the debug output for errors
+    ```
+  </Accordion>
+
+  <Accordion title="Contributing to dotly">
+    ```bash
+    # Before committing changes
+    dot self lint --fix
+    dot self static_analysis
+    
+    # Make sure all checks pass
+    # Then commit your changes
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Alternative Command: dotly
+
+All `dot self` commands can be run using `dotly` directly:
+
+```bash
+# These are equivalent:
+dot self install  ≡  dotly install
+dot self update   ≡  dotly update
+dot self debug    ≡  dotly debug
+dot self lint     ≡  dotly lint
+dot self static_analysis  ≡  dotly static_analysis
+```
+
+## Restoration Scripts
+
+The `install` command runs custom scripts from `$DOTFILES_PATH/restoration_scripts/`:
+
+- Scripts must have `.sh` extension
+- Scripts must be executable (`chmod +x`)
+- Scripts run in alphabetical order
+- Use for:
+  - Custom package installations
+  - System configurations
+  - Additional setup steps
+
+**Example restoration script:**
+
+```bash
+# $DOTFILES_PATH/restoration_scripts/01-install-tools.sh
+#!/usr/bin/env bash
+
+# Install development tools
+dot package add fzf
+dot package add ripgrep
+dot package add git-delta
+
+echo "Development tools installed"
+```

@@ -1,0 +1,281 @@
+---
+title: Architecture
+description: Understanding how dotly works under the hood - framework structure, zim integration, and execution model
+---
+
+## Framework Overview
+
+dotly is built as a lightweight wrapper on top of [zim](https://github.com/zimfw/zimfw), one of the fastest zsh frameworks available. It provides an opinionated structure for organizing your dotfiles while maintaining flexibility and performance.
+
+### Core Design Principles
+
+<CardGroup cols={2}>
+  <Card title="Modularity" icon="cube">
+    Organize configs by context (git, shell, editors, languages)
+  </Card>
+  <Card title="Portability" icon="laptop">
+    Use git submodules to keep dotly separate from your dotfiles
+  </Card>
+  <Card title="Extensibility" icon="puzzle-piece">
+    Add custom scripts and configurations without modifying the framework
+  </Card>
+  <Card title="Performance" icon="bolt">
+    Fast shell startup using zim and efficient script loading
+  </Card>
+</CardGroup>
+
+## How dotly Works
+
+### The Two-Repository Model
+
+dotly uses a dual-repository architecture to separate the framework from your personal configurations:
+
+```bash
+# Your dotfiles repository (your personal configs)
+$DOTFILES_PATH → ~/.dotfiles
+
+# The dotly framework (installed as a git submodule)
+$DOTLY_PATH → ~/.dotfiles/modules/dotly
+```
+
+<Info>
+  This separation allows you to update the dotly framework independently while keeping your personal configurations safe in your own repository.
+</Info>
+
+### Installation Process
+
+When you install dotly, the following happens:
+
+<Steps>
+  <Step title="Clone your dotfiles repository">
+    ```bash
+    git clone [your-dotfiles-repo] $HOME/.dotfiles
+    ```
+  </Step>
+  
+  <Step title="Initialize git submodules">
+    ```bash
+    git submodule update --init --recursive modules/dotly
+    ```
+    This pulls the dotly framework into `modules/dotly`.
+  </Step>
+  
+  <Step title="Run the installer">
+    ```bash
+    DOTFILES_PATH="$HOME/.dotfiles" \
+    DOTLY_PATH="$DOTFILES_PATH/modules/dotly" \
+    "$DOTLY_PATH/bin/dot" self install
+    ```
+  </Step>
+  
+  <Step title="Restart your terminal">
+    The new shell configuration will be loaded.
+  </Step>
+</Steps>
+
+## Zim Integration
+
+dotly leverages zim for shell performance and plugin management:
+
+### Zim Installation Location
+
+```bash
+export ZIM_HOME="$DOTFILES_PATH/shell/zsh/.zim"
+```
+
+During installation, dotly downloads and configures zim:
+
+```bash
+curl -fsSL --create-dirs -o "$ZIM_HOME/zimfw.zsh" \
+  https://github.com/zimfw/zimfw/releases/latest/download/zimfw.zsh
+
+zsh "$ZIM_HOME/zimfw.zsh" install
+```
+
+<Note>
+  Zim is installed inside your dotfiles repository, so your zim configuration and plugins are versioned alongside your other configs.
+</Note>
+
+### Shell Configuration Flow
+
+Your shell loads in this order:
+
+1. **`.zshenv`** - Environment variables and paths
+2. **`.zshrc`** - Interactive shell configuration
+   - Sources zim framework
+   - Loads dotly shell configurations from `$DOTFILES_PATH/shell/`
+   - Applies aliases, functions, and custom scripts
+3. **`.zlogin`** - Commands to run after login
+
+## Script Execution Model
+
+The `dot` command provides a unified interface for running scripts from both your dotfiles and the dotly framework.
+
+### Script Resolution
+
+When you run `dot <context> <script>`, dotly searches for scripts in this order:
+
+```bash
+# From bin/dot (lines 47-49)
+script_exist "$DOTFILES_PATH" "$context" "$script" && script_path="$DOTFILES_PATH"
+script_exist "$DOTLY_PATH" "$context" "$script" && script_path="$DOTLY_PATH"
+```
+
+<Accordion title="Script Resolution Example">
+  When you run `dot git commit`:
+  
+  1. First checks: `$DOTFILES_PATH/scripts/git/commit`
+  2. Then checks: `$DOTLY_PATH/scripts/git/commit`
+  3. If found in `$DOTFILES_PATH`, your custom script takes precedence
+  4. Otherwise, runs the default dotly script
+  
+  This allows you to override any default dotly script with your own implementation.
+</Accordion>
+
+### Core Module Loading
+
+All dotly scripts source the core modules automatically:
+
+```bash
+# From bin/dot (line 5)
+source "$DOTLY_PATH/scripts/core/_main.sh"
+```
+
+The `_main.sh` file loads all core utilities:
+
+```bash
+# From scripts/core/_main.sh
+for file in $DOTLY_PATH/scripts/core/{args,collections,documentation,dot,git,log,platform,output,script,str}.sh; do
+  source "$file"
+done
+```
+
+These core modules provide:
+
+- **args.sh** - Argument parsing utilities
+- **documentation.sh** - Help text parsing with docpars
+- **dot.sh** - Script listing and discovery
+- **output.sh** - Colored output formatting
+- **platform.sh** - OS detection (macOS, Linux, WSL)
+- **log.sh** - Logging utilities
+- **git.sh** - Git helper functions
+- **collections.sh** - Array/list operations
+- **str.sh** - String manipulation
+
+## Path Configuration
+
+The PATH is carefully ordered to give your custom scripts priority:
+
+```bash
+# From dotfiles_template/shell/exports.sh
+path=(
+  "$HOME/bin"                    # Your personal binaries (highest priority)
+  "$DOTLY_PATH/bin"             # dotly commands (dot, dotly)
+  "$DOTFILES_PATH/bin"          # Your custom dotfiles binaries
+  "$JAVA_HOME/bin"
+  "$GEM_HOME/bin"
+  "$GOPATH/bin"
+  "$HOME/.cargo/bin"
+  "/usr/local/bin"
+  "/usr/bin"
+  "/bin"
+  "$path"                       # Existing system paths
+)
+```
+
+<Tip>
+  Place custom binaries or symlinks in `$DOTFILES_PATH/bin` to make them available system-wide while keeping them versioned in your dotfiles.
+</Tip>
+
+## Extension Points
+
+You can extend dotly functionality in several ways:
+
+### 1. Custom Scripts
+
+Add scripts to `$DOTFILES_PATH/scripts/<context>/<script-name>`:
+
+```bash
+# Example: $DOTFILES_PATH/scripts/deploy/production
+#!/usr/bin/env bash
+
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+##? Deploy to production
+##?
+##? Usage:
+##?    deploy production [--dry-run]
+docs::parse "$@"
+
+# Your deployment logic here
+```
+
+### 2. Restoration Scripts
+
+Scripts in `$DOTFILES_PATH/restoration_scripts/` run during installation:
+
+```bash
+install_scripts_path="$DOTFILES_PATH/restoration_scripts"
+find "$install_scripts_path" -mindepth 1 -maxdepth 1 -type l,f -name '*.sh' |
+  sort |
+  while read -r install_script; do
+    [[ -x $install_script ]] && . "$install_script"
+  done
+```
+
+Use these to:
+- Install additional packages
+- Set up development environments
+- Configure OS-specific settings
+- Clone repositories
+
+### 3. Custom Contexts
+
+Create new contexts by adding directories under `$DOTFILES_PATH/scripts/`:
+
+```bash
+mkdir -p $DOTFILES_PATH/scripts/docker
+touch $DOTFILES_PATH/scripts/docker/build
+chmod +x $DOTFILES_PATH/scripts/docker/build
+```
+
+Now you can run: `dot docker build`
+
+### 4. Shell Customization
+
+Modify these files in `$DOTFILES_PATH/shell/`:
+
+- **exports.sh** - Environment variables and PATH configuration
+- **aliases.sh** - Command aliases
+- **functions.sh** - Shell functions
+- **zsh/.zimrc** - Zim plugins and configuration
+
+## Platform Detection
+
+Many dotly scripts adapt to your operating system:
+
+```bash
+if platform::is_macos; then
+  output::answer "Setting up macOS platform"
+  install_macos_custom
+fi
+```
+
+Available platform detection functions:
+- `platform::is_macos`
+- `platform::is_linux`
+- `platform::is_wsl`
+- `platform::command_exists <command>`
+
+This allows you to create cross-platform dotfiles that work on macOS, Linux, and WSL.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Folder Structure" icon="folder" href="./folder-structure">
+    Learn about the dotfiles directory organization
+  </Card>
+  <Card title="Dot Command" icon="terminal" href="./dot-command">
+    Master the dot command and script system
+  </Card>
+</CardGroup>

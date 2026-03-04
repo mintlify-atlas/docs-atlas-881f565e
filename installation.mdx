@@ -1,0 +1,365 @@
+---
+title: Installation
+description: Install dotly and set up your dotfiles environment on macOS, Linux, or WSL
+---
+
+# Installation
+
+This guide will walk you through installing dotly for the first time. If you already have existing dotfiles, see the [Restoring Existing Dotfiles](#restoring-existing-dotfiles) section.
+
+## System Requirements
+
+Before installing dotly, ensure your system has the following:
+
+<Note>
+  The installer will attempt to install missing dependencies automatically on most systems.
+</Note>
+
+- **Operating System**: macOS, Linux, or Windows Subsystem for Linux (WSL)
+- **Shell**: Bash or Zsh
+- **Git**: Version control system (required)
+- **curl** or **wget**: For downloading the installer
+
+### Optional but Recommended
+
+- **fzf**: For interactive fuzzy finding (installed automatically)
+- **sudo access**: For installing system packages
+
+## Fresh Installation
+
+The easiest way to install dotly is using the automatic installer script.
+
+<CodeGroup>
+
+```bash curl
+bash <(curl -s https://raw.githubusercontent.com/CodelyTV/dotly/HEAD/installer)
+```
+
+```bash wget
+bash <(wget -qO- https://raw.githubusercontent.com/CodelyTV/dotly/HEAD/installer)
+```
+
+</CodeGroup>
+
+### What the Installer Does
+
+When you run the installer, it performs the following steps:
+
+<Steps>
+  <Step title="Choose installation location">
+    You'll be prompted to specify where your dotfiles should be located. The default is `~/.dotfiles`.
+    
+    ```
+    Where do you want your dotfiles to be located? (default ~/.dotfiles)
+    ```
+  </Step>
+
+  <Step title="Create dotfiles directory">
+    The installer creates the dotfiles directory. If it already exists, a backup is created with a timestamp:
+    
+    ```
+    The path '~/.dotfiles' already exist
+    Creating a backup in '~/.dotfiles.1234567890.back'
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    The installer checks for and installs required dependencies:
+    - **git**: Installed via apt, dnf, yum, brew, or pacman
+    - **curl**: Installed via your system's package manager
+    
+    On macOS, it may prompt you to install Command Line Tools if needed.
+  </Step>
+
+  <Step title="Initialize Git repository">
+    A new Git repository is initialized in your dotfiles directory:
+    
+    ```bash
+    git init
+    ```
+  </Step>
+
+  <Step title="Clone dotly as submodule">
+    dotly is added as a Git submodule in `modules/dotly`:
+    
+    ```bash
+    git submodule add -b main \
+      https://github.com/CodelyTV/dotly.git modules/dotly
+    ```
+  </Step>
+
+  <Step title="Install dotly dependencies">
+    All dotly dependencies are installed:
+    
+    ```bash
+    git submodule update --init --recursive
+    ```
+  </Step>
+
+  <Step title="Run dotly installation">
+    The dotly self-installation script is executed:
+    
+    ```bash
+    dot self install
+    ```
+    
+    This sets up your shell configuration, creates the dotfiles template structure, and configures everything.
+  </Step>
+</Steps>
+
+<Info>
+  Installation logs are saved to `~/dotly.log` for troubleshooting purposes.
+</Info>
+
+### Post-Installation
+
+After the installer completes:
+
+1. **Restart your terminal** to load the new shell configuration
+2. Verify the installation by running:
+   ```bash
+   dot -h
+   ```
+3. You should see the dotly help message
+
+## Platform-Specific Notes
+
+### macOS
+
+<Info>
+  On macOS, the installer may prompt you to install Xcode Command Line Tools if they're not already installed.
+</Info>
+
+- The installer works with both Intel and Apple Silicon Macs
+- Homebrew packages can be managed using `dot package` commands
+- Platform-specific configs go in `os/mac/`
+
+### Linux
+
+Supported package managers:
+- **apt** (Debian, Ubuntu)
+- **dnf** (Fedora, RHEL 8+)
+- **yum** (CentOS, RHEL 7)
+- **pacman** (Arch, Manjaro)
+
+Platform-specific configs go in `os/linux/`
+
+### Windows Subsystem for Linux (WSL)
+
+- Works with WSL 1 and WSL 2
+- Install in your Linux home directory (not Windows filesystem for better performance)
+- Follow the Linux installation instructions
+- You can sync configs between WSL and Windows using symlinks
+
+## Manual Installation
+
+If you prefer to install manually or the automatic installer doesn't work:
+
+<Steps>
+  <Step title="Install Git">
+    Ensure Git is installed on your system:
+    ```bash
+    git --version
+    ```
+  </Step>
+
+  <Step title="Create dotfiles directory">
+    ```bash
+    mkdir -p ~/.dotfiles
+    cd ~/.dotfiles
+    ```
+  </Step>
+
+  <Step title="Initialize Git repository">
+    ```bash
+    git init
+    ```
+  </Step>
+
+  <Step title="Add dotly as submodule">
+    ```bash
+    git submodule add https://github.com/CodelyTV/dotly.git modules/dotly
+    ```
+  </Step>
+
+  <Step title="Install dotly dependencies">
+    ```bash
+    git submodule update --init --recursive
+    ```
+  </Step>
+
+  <Step title="Run dotly installation">
+    ```bash
+    DOTFILES_PATH="$HOME/.dotfiles" \
+    DOTLY_PATH="$DOTFILES_PATH/modules/dotly" \
+    "$DOTLY_PATH/bin/dot" self install
+    ```
+  </Step>
+
+  <Step title="Restart your terminal">
+    Close and reopen your terminal to load the new configuration.
+  </Step>
+</Steps>
+
+## Restoring Existing Dotfiles
+
+If you already have dotfiles managed with dotly on another machine:
+
+### Using the Restorer Script
+
+<CodeGroup>
+
+```bash curl
+bash <(curl -s https://raw.githubusercontent.com/CodelyTV/dotly/HEAD/restorer)
+```
+
+```bash wget
+bash <(wget -qO- https://raw.githubusercontent.com/CodelyTV/dotly/HEAD/restorer)
+```
+
+</CodeGroup>
+
+<Warning>
+  You'll need your GitHub username and repository name. If your repository is private, you'll need to set up SSH keys first.
+</Warning>
+
+The restorer supports:
+- GitHub repositories (public and private)
+- GitLab repositories
+- Any Git repository URL
+
+### Manual Restore
+
+<Steps>
+  <Step title="Install Git">
+    ```bash
+    # On Ubuntu/Debian
+    sudo apt install git
+    
+    # On macOS
+    xcode-select --install
+    ```
+  </Step>
+
+  <Step title="Clone your dotfiles">
+    ```bash
+    git clone https://github.com/YOUR_USERNAME/dotfiles.git ~/.dotfiles
+    ```
+  </Step>
+
+  <Step title="Navigate to dotfiles directory">
+    ```bash
+    cd ~/.dotfiles
+    ```
+  </Step>
+
+  <Step title="Install Git submodules">
+    ```bash
+    git submodule update --init --recursive modules/dotly
+    ```
+  </Step>
+
+  <Step title="Install dotfiles">
+    ```bash
+    DOTFILES_PATH="$HOME/.dotfiles" \
+    DOTLY_PATH="$DOTFILES_PATH/modules/dotly" \
+    "$DOTLY_PATH/bin/dot" self install
+    ```
+  </Step>
+
+  <Step title="Restart terminal">
+    Close and reopen your terminal.
+  </Step>
+
+  <Step title="Import packages">
+    If you've previously exported your packages:
+    ```bash
+    dot package import
+    ```
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### Permission Denied
+
+If you get permission errors during installation:
+
+```bash
+# Make sure you have write permissions
+ls -la ~/ | grep .dotfiles
+
+# If needed, fix permissions
+sudo chown -R $USER:$USER ~/.dotfiles
+```
+
+### Git Not Found
+
+If Git is not installed:
+
+<CodeGroup>
+
+```bash macOS
+xcode-select --install
+```
+
+```bash Ubuntu/Debian
+sudo apt update && sudo apt install git
+```
+
+```bash Fedora
+sudo dnf install git
+```
+
+```bash Arch
+sudo pacman -S git
+```
+
+</CodeGroup>
+
+### Submodule Errors
+
+If you encounter submodule-related errors:
+
+```bash
+cd ~/.dotfiles
+git submodule update --init --recursive --force
+```
+
+### Shell Not Changing
+
+If your shell doesn't change to zsh after installation:
+
+```bash
+# Check current shell
+echo $SHELL
+
+# Set zsh as default (if installed)
+chsh -s $(which zsh)
+
+# Log out and log back in
+```
+
+### Check Installation Logs
+
+Review the installation logs for detailed error messages:
+
+```bash
+cat ~/dotly.log
+```
+
+### Debug Mode
+
+Run dotly in debug mode to see detailed output:
+
+```bash
+dot self debug
+```
+
+## Next Steps
+
+Now that dotly is installed, continue with the [Quick Start](/quickstart) guide to learn how to use it.
+
+<Card title="Quick Start Guide" icon="rocket" href="/quickstart">
+  Learn the basics and start configuring your dotfiles
+</Card>

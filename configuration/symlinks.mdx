@@ -1,0 +1,400 @@
+---
+title: Symlink Configuration
+description: Understand and configure symlinks to manage your dotfiles across different operating systems
+---
+
+## What Are Symlinks?
+
+A **symlink** (symbolic link) is a special type of file that points to another file or directory. In dotly, symlinks connect application config files to your versioned dotfiles repository.
+
+```
+~/.vimrc  ───────────────▸  $DOTFILES_PATH/editors/vim/.vimrc
+   ↑                                      ↑
+ (symlink)                          (actual file)
+```
+
+When an application reads `~/.vimrc`, it automatically reads the file from your dotfiles. Any changes made through the application are saved to your versioned dotfiles.
+
+## Why Use Symlinks?
+
+<CardGroup cols={2}>
+  <Card title="Single Source of Truth" icon="database">
+    Keep one version of each config file, stored in your dotfiles repository.
+  </Card>
+
+  <Card title="Automatic Sync" icon="arrows-rotate">
+    Changes made through applications automatically update your versioned configs.
+  </Card>
+
+  <Card title="Easy Restoration" icon="clock-rotate-left">
+    Restore all your configs on a new machine with a single command.
+  </Card>
+
+  <Card title="Cross-Machine Consistency" icon="laptops">
+    Use the same configurations across all your development machines.
+  </Card>
+</CardGroup>
+
+## Symlink Configuration Files
+
+Dotly uses YAML files to define symlinks. These files are located in `$DOTFILES_PATH/symlinks/`:
+
+- `conf.yaml` - Symlinks for **all operating systems**
+- `conf.macos.yaml` - Symlinks for **macOS only** (both Intel and ARM)
+- `conf.macos-intel.yaml` - Symlinks for **macOS Intel only**
+- `conf.linux.yaml` - Symlinks for **Linux only**
+
+<Note>
+  When you run `dot symlinks apply`, dotly automatically detects your OS and applies the appropriate config files.
+</Note>
+
+## Configuration Format
+
+### Basic Syntax
+
+Symlink configurations use YAML format with the following structure:
+
+```yaml
+- link:
+    ~/target/path: source/path/in/dotfiles
+    ~/another/target: another/source
+```
+
+- **Left side (target)**: Where the application expects the config file (can use `~` for home directory)
+- **Right side (source)**: Path relative to `$DOTFILES_PATH`
+
+### Complete Example
+
+Here's the default `conf.yaml` that comes with dotly:
+
+```yaml conf.yaml
+- clean: ['~']
+
+- defaults:
+    link:
+      create: true
+      force: true
+
+- create:
+    - $DOTFILES_PATH/shell/bash/completions
+    - $DOTFILES_PATH/shell/bash/themes
+
+- link:
+    ~/.bash_profile: shell/bash/.bash_profile
+    ~/.bashrc: shell/bash/.bashrc
+    ~/.zimrc: shell/zsh/.zimrc
+    ~/.zlogin: shell/zsh/.zlogin
+    ~/.zshenv: shell/zsh/.zshenv
+    ~/.zshrc: shell/zsh/.zshrc
+    ~/.inputrc: shell/.inputrc
+```
+
+<Accordion title="Understanding each section">
+  **`clean`**: Removes broken symlinks from specified directories
+
+  **`defaults`**: Sets default behavior for all link operations:
+  - `create: true` - Creates parent directories if they don't exist
+  - `force: true` - Overwrites existing files/symlinks
+
+  **`create`**: Creates directories before linking (useful for empty directories)
+
+  **`link`**: Defines the actual symlink mappings
+</Accordion>
+
+## Platform-Specific Configurations
+
+### macOS Configuration
+
+The `conf.macos.yaml` file includes macOS-specific symlinks, such as GNU tool replacements:
+
+```yaml conf.macos.yaml
+- clean: ['~']
+
+- defaults:
+    link:
+      create: true
+      force: true
+
+- create:
+    - ~/.hushlogin
+
+- link:
+    ~/.dotly: os/mac/.dotly
+    ~/bin/bash: /opt/homebrew/bin/bash
+    ~/bin/date: /opt/homebrew/bin/gdate
+    ~/bin/find: /opt/homebrew/bin/gfind
+    ~/bin/make: /opt/homebrew/bin/gmake
+    ~/bin/sed: /opt/homebrew/bin/gsed
+    ~/bin/touch: /opt/homebrew/bin/gtouch
+    ~/bin/zsh: /opt/homebrew/bin/zsh
+```
+
+<Tip>
+  This example shows how to symlink GNU tools (installed via Homebrew) to `~/bin/` for consistent behavior across platforms.
+</Tip>
+
+### macOS Intel Configuration
+
+For Intel Macs, paths differ slightly due to Homebrew installation location:
+
+```yaml conf.macos-intel.yaml
+- link:
+    ~/.dotly: os/mac/.dotly
+    ~/bin/bash: /usr/local/bin/bash
+    ~/bin/date: /usr/local/bin/gdate
+    ~/bin/find: /usr/local/opt/findutils/bin/gfind
+    ~/bin/make: /usr/local/opt/make/libexec/gnubin/make
+    ~/bin/sed: /usr/local/opt/gnu-sed/libexec/gnubin/sed
+    ~/bin/touch: /usr/local/bin/gtouch
+```
+
+### Linux Configuration
+
+```yaml conf.linux.yaml
+- clean: ['~']
+
+- defaults:
+    link:
+      create: true
+      force: true
+
+- link:
+    ~/.dotly: os/linux/.dotly
+```
+
+## Applying Symlinks
+
+### Manual Application
+
+To create all symlinks defined in your configuration files:
+
+```bash
+dot symlinks apply
+```
+
+This command:
+1. Reads `conf.yaml` (common configs)
+2. Reads OS-specific config (`conf.macos.yaml` or `conf.linux.yaml`)
+3. Creates all directories as needed
+4. Creates all symlinks
+5. Reports success or errors
+
+<CodeGroup>
+```bash Success Output
+$ dot symlinks apply
+
+All targets have been cleaned
+All links have been set up
+
+✓ Done!
+```
+
+```bash With Errors
+$ dot symlinks apply
+
+All targets have been cleaned
+Error: Target ~/.vimrc exists and is not a link
+
+Hint: Add force: true to override existing files
+```
+</CodeGroup>
+
+### Automatic Application
+
+Symlinks are automatically applied when you:
+- Install dotly for the first time
+- Restore your dotfiles on a new machine
+- Run `dot self install`
+
+## Advanced Configuration Options
+
+### Force Overwrite
+
+Overwrite existing files when creating symlinks:
+
+```yaml
+- defaults:
+    link:
+      force: true
+```
+
+### Create Parent Directories
+
+Automatically create parent directories:
+
+```yaml
+- defaults:
+    link:
+      create: true
+```
+
+### Relative vs Absolute Paths
+
+```yaml
+# ✅ Relative path (recommended)
+~/.vimrc: editors/vim/.vimrc
+
+# ✅ Absolute path (for system files)
+/etc/hosts: os/hosts
+
+# ✅ Use $DOTFILES_PATH variable
+~/.config/app: $DOTFILES_PATH/configs/app
+```
+
+### Creating Empty Directories
+
+Some applications need specific directories to exist:
+
+```yaml
+- create:
+    - ~/.cache/myapp
+    - ~/.local/share/myapp
+```
+
+## Common Symlink Patterns
+
+<AccordionGroup>
+  <Accordion title="Shell Configuration">
+    ```yaml
+    - link:
+        ~/.bash_profile: shell/bash/.bash_profile
+        ~/.bashrc: shell/bash/.bashrc
+        ~/.zshrc: shell/zsh/.zshrc
+        ~/.zshenv: shell/zsh/.zshenv
+    ```
+  </Accordion>
+
+  <Accordion title="Editor Configs">
+    ```yaml
+    - link:
+        ~/.vimrc: editors/vim/.vimrc
+        ~/.config/nvim: editors/nvim
+        ~/Library/Application Support/Code/User/settings.json: editors/code/settings.json
+    ```
+  </Accordion>
+
+  <Accordion title="Development Tools">
+    ```yaml
+    - link:
+        ~/.gitconfig: git/.gitconfig
+        ~/.npmrc: langs/node/.npmrc
+        ~/.pypirc: langs/python/.pypirc
+        ~/.cargo/config: langs/rust/cargo-config
+    ```
+  </Accordion>
+
+  <Accordion title="Application Settings">
+    ```yaml
+    - link:
+        ~/.config/alacritty/alacritty.yml: os/terminal/alacritty.yml
+        ~/.tmux.conf: os/tmux/.tmux.conf
+        ~/.config/starship.toml: os/terminal/starship.toml
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## How It Works Under the Hood
+
+Dotly uses [dotbot](https://github.com/anishathalye/dotbot) to manage symlinks. The `dot symlinks apply` command executes:
+
+```bash scripts/symlinks/apply
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+symlinks::apply() {
+	local -r CONFIG="$DOTFILES_PATH/symlinks/$1"
+	shift
+
+	echo
+	"$DOTLY_PATH/modules/dotbot/bin/dotbot" -d "$DOTFILES_PATH" -c "$CONFIG" "$@"
+	echo
+}
+
+# Apply common config
+symlinks::apply "conf.yaml"
+
+# Apply OS-specific config
+if platform::is_macos; then
+	if platform::is_macos_arm; then
+		symlinks::apply "conf.macos.yaml"
+	else
+		symlinks::apply "conf.macos-intel.yaml"
+	fi
+else
+	symlinks::apply "conf.linux.yaml"
+fi
+
+log::success "Done!"
+```
+
+<Note>
+  The script automatically detects your platform (macOS ARM, macOS Intel, or Linux) and applies the appropriate configs.
+</Note>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Symlink already exists">
+    **Problem**: Error about existing symlinks
+
+    **Solution**: Add `force: true` to your defaults:
+    ```yaml
+    - defaults:
+        link:
+          force: true
+    ```
+  </Accordion>
+
+  <Accordion title="Permission denied">
+    **Problem**: Cannot create symlink due to permissions
+
+    **Solution**: Check file permissions and ownership:
+    ```bash
+    ls -la ~/target/file
+    # Fix permissions if needed
+    chmod 644 $DOTFILES_PATH/source/file
+    ```
+  </Accordion>
+
+  <Accordion title="Broken symlinks">
+    **Problem**: Symlinks point to non-existent files
+
+    **Solution**: Clean broken symlinks:
+    ```yaml
+    - clean: ['~', '~/.config']
+    ```
+    
+    Or find them manually:
+    ```bash
+    find ~ -type l ! -exec test -e {} \; -print
+    ```
+  </Accordion>
+
+  <Accordion title="Path doesn't expand">
+    **Problem**: Variables like `$HOME` not expanding
+
+    **Solution**: Use `~` instead:
+    ```yaml
+    # ✅ Works
+    ~/.vimrc: editors/vim/.vimrc
+    
+    # ❌ Doesn't work
+    $HOME/.vimrc: editors/vim/.vimrc
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Version Config Files" icon="code-branch" href="/configuration/versioning-configs">
+    Learn how to add new config files to your dotfiles
+  </Card>
+
+  <Card title="Shell Customization" icon="terminal" href="/configuration/shell-customization">
+    Customize your shell environment
+  </Card>
+</CardGroup>

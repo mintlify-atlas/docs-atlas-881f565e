@@ -1,0 +1,165 @@
+---
+title: 'Using dotly in Docker'
+description: 'Test dotly in isolated Docker containers without affecting your system'
+---
+
+## Why Test in Docker?
+
+Docker provides a safe, isolated environment to test dotly without modifying your system. This is ideal for:
+
+- Testing dotly before installing on your main system
+- Experimenting with different configurations
+- Validating changes to dotly itself
+- Running dotly in CI/CD pipelines
+- Testing on different Linux distributions
+
+Once you exit the shell, the Docker container is automatically deleted, leaving no trace on your system.
+
+## Quick Start
+
+<CodeGroup>
+
+```bash Alpine Linux
+docker run -e TERM -e COLORTERM -e LC_ALL=C.UTF-8 -w /root -it --rm alpine sh -uec '
+  apk add curl sudo bash zsh git g++ python3
+  bash -c "$(curl -fsSL https://raw.githubusercontent.com/CodelyTV/dotly/HEAD/installer)"
+  zsh'
+```
+
+```bash Ubuntu
+docker run -e TERM -e COLORTERM -w /root -it --rm ubuntu sh -uec '
+  apt-get update
+  apt-get install -y curl build-essential sudo
+  su -c bash -c "$(curl -fsSL https://raw.githubusercontent.com/CodelyTV/dotly/HEAD/installer)"
+  su -c zsh'
+```
+
+</CodeGroup>
+
+## What's Included
+
+The Docker test environment includes all necessary dependencies:
+
+<Steps>
+
+<Step title="Base System">
+  Essential system packages for running dotly
+  - `curl` - For downloading dotly installer
+  - `git` - Required for dotly's git operations
+  - `sudo` - For privilege escalation during setup
+</Step>
+
+<Step title="Development Tools">
+  Build tools required by dotly's dependencies
+  - **Alpine**: `g++`, `python3`
+  - **Ubuntu**: `build-essential`
+</Step>
+
+<Step title="Shell Environment">
+  Complete shell setup
+  - `bash` - Base shell
+  - `zsh` - dotly's default shell
+  - Zim framework (installed automatically)
+</Step>
+
+<Step title="Terminal Support">
+  Environment variables for proper terminal rendering
+  - `TERM` - Terminal type information
+  - `COLORTERM` - Color support
+  - `LC_ALL=C.UTF-8` - Locale settings (Alpine)
+</Step>
+
+</Steps>
+
+## Understanding the Docker Commands
+
+### Alpine Command Breakdown
+
+```bash
+docker run -e TERM -e COLORTERM -e LC_ALL=C.UTF-8 -w /root -it --rm alpine sh -uec '
+  apk add curl sudo bash zsh git g++ python3
+  bash -c "$(curl -fsSL https://raw.githubusercontent.com/CodelyTV/dotly/HEAD/installer)"
+  zsh'
+```
+
+**Flags explained:**
+- `-e TERM -e COLORTERM -e LC_ALL=C.UTF-8` - Pass environment variables for terminal support
+- `-w /root` - Set working directory to `/root`
+- `-it` - Interactive terminal with TTY
+- `--rm` - Remove container after exit
+- `sh -uec` - Run shell with error checking and unset variable protection
+
+### Ubuntu Command Breakdown
+
+```bash
+docker run -e TERM -e COLORTERM -w /root -it --rm ubuntu sh -uec '
+  apt-get update
+  apt-get install -y curl build-essential sudo
+  su -c bash -c "$(curl -fsSL https://raw.githubusercontent.com/CodelyTV/dotly/HEAD/installer)"
+  su -c zsh'
+```
+
+**Key differences:**
+- Uses `apt-get` package manager instead of `apk`
+- Installs `build-essential` package (contains gcc, g++, make, etc.)
+- Uses `su -c` to switch to the user context for installation
+
+## Testing Your Dotfiles
+
+You can mount your existing dotfiles repository into the Docker container:
+
+```bash
+docker run -e TERM -e COLORTERM -w /root -it --rm \
+  -v ~/.dotfiles:/root/.dotfiles \
+  alpine sh -uec '
+  apk add curl sudo bash zsh git g++ python3
+  cd /root/.dotfiles
+  git submodule update --init --recursive modules/dotly
+  DOTFILES_PATH="/root/.dotfiles" \
+    DOTLY_PATH="/root/.dotfiles/modules/dotly" \
+    "/root/.dotfiles/modules/dotly/bin/dot" self install
+  zsh'
+```
+
+<Warning>
+  Any changes made inside the Docker container will be lost when you exit, unless you've mounted a volume with `-v`.
+</Warning>
+
+## Using Docker for CI/CD
+
+The Docker approach is perfect for continuous integration. See how dotly itself uses it:
+
+```yaml
+jobs:
+  build:
+    name: 🚀 Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - macos-12
+          - ubuntu-20.04
+    
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Install
+        run: echo "$HOME/.dotfiles" | bash installer
+```
+
+## Next Steps
+
+After testing in Docker:
+
+<CardGroup cols={2}>
+  <Card title="Install on Your System" icon="download" href="/quickstart">
+    Ready to install? Follow the quickstart guide
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/advanced/troubleshooting">
+    Having issues? Check the troubleshooting guide
+  </Card>
+</CardGroup>
+
+<Tip>
+  Use `dot self debug` in a separate terminal window to monitor dotly's log output in real-time while testing.
+</Tip>

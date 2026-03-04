@@ -1,0 +1,87 @@
+---
+title: Dotfiles Scripts
+description: Scripts for creating and managing your dotfiles structure
+---
+
+The `dotfiles` context provides scripts to create and import dotfiles configurations. These scripts help you set up the initial dotfiles structure and import existing configurations.
+
+## Available Scripts
+
+### create
+
+Creates the dotfiles structure by copying the template files from dotly into your dotfiles directory.
+
+**Usage:**
+
+```bash
+dot dotfiles create
+dot dotfiles create [dotfiles_path]
+```
+
+**What it does:**
+
+- Copies all template files from `dotfiles_template/` to your dotfiles directory
+- Applies templating to replace placeholder values with actual paths
+- Updates configuration in `bin/sdot`, `shell/bash/.bashrc`, and `shell/zsh/.zshenv`
+- Skips creation if dotfiles structure already exists
+
+**Example:**
+
+```bash
+# Create dotfiles structure in the default location
+dot dotfiles create
+```
+
+<Info>
+  If the dotfiles structure already exists, the script will skip creation and show a note.
+</Info>
+
+### import
+
+Imports existing dotfiles into your dotfiles directory.
+
+**Usage:**
+
+```bash
+dot dotfiles import
+dot dotfiles import [dotfiles_path]
+```
+
+**What it does:**
+
+- Imports your existing dot files into the dotfiles structure
+- Allows you to integrate pre-existing configurations
+
+**Example:**
+
+```bash
+# Import existing dotfiles
+dot dotfiles import
+```
+
+## Common Workflow
+
+When setting up dotly for the first time:
+
+1. **Create the structure:**
+   ```bash
+   dot dotfiles create
+   ```
+
+2. **Import existing configs:**
+   ```bash
+   dot dotfiles import
+   ```
+
+3. **Commit to version control:**
+   ```bash
+   cd $DOTFILES_PATH
+   git remote add origin YOUR_DOTFILES_REPO_URL
+   git add -A
+   git commit -m "Initial commit"
+   git push origin main
+   ```
+
+<Note>
+  The `DOTFILES_PATH` environment variable points to your dotfiles directory, typically `~/.dotfiles`.
+</Note>

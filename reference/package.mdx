@@ -1,0 +1,266 @@
+---
+title: Package Scripts
+description: Scripts for managing packages across multiple package managers
+---
+
+The `package` context provides unified package management across different package managers (brew, apt, cargo, npm, etc.). These scripts help you install, backup, and restore packages on different systems.
+
+## Package Management
+
+### add
+
+Installs a package using the appropriate package manager for your system.
+
+**Usage:**
+
+```bash
+dot package add <package_name>
+dot package add <package_name> --skip-recipe
+```
+
+**What it does:**
+
+- Checks if package is already installed
+- Tries custom recipes first (unless `--skip-recipe` is used)
+- Automatically detects and tries multiple package managers:
+  - **macOS:** brew, mas, ports, cargo
+  - **Linux:** apt, dnf, yum, brew, pacman, cargo
+- Installs using the first successful package manager
+
+**Examples:**
+
+```bash
+# Install fzf (tries recipe first, then package managers)
+dot package add fzf
+
+# Install without using custom recipe
+dot package add ripgrep --skip-recipe
+
+# Install Git Delta
+dot package add git-delta
+```
+
+<Info>
+  Custom recipes in `scripts/package/recipes/` provide specialized installation steps for certain packages.
+</Info>
+
+### update_all
+
+Updates all packages from all installed package managers.
+
+**Usage:**
+
+```bash
+dot package update_all
+```
+
+**What it does:**
+
+Updates packages from all detected package managers:
+
+- macOS App Store (mas)
+- Homebrew (brew)
+- Python pip (pip3)
+- PHP Composer (composer)
+- Ruby gems (gem)
+- Node.js npm (npm)
+- Rust cargo (cargo)
+- tldr database
+- Zim framework
+- dotly itself
+
+**Example:**
+
+```bash
+# Update everything
+dot package update_all
+```
+
+<Note>
+  This command can take several minutes as it updates all package managers sequentially.
+</Note>
+
+**Debugging:**
+
+You can run `dot self debug` in a separate terminal to see detailed logs:
+
+```bash
+# Terminal 1
+dot package update_all
+
+# Terminal 2 (for debugging)
+dot self debug
+```
+
+## Backup & Restore
+
+### dump
+
+Dumps all installed packages to files for backup.
+
+**Usage:**
+
+```bash
+dot package dump
+```
+
+**What it does:**
+
+Creates backup files for all installed packages:
+
+- **Homebrew** → `$DOTFILES_PATH/os/mac/brew/Brewfile`
+- **Apt** → `$DOTFILES_PATH/os/linux/apt/packages.txt`
+- **Snap** → `$DOTFILES_PATH/os/linux/snap/packages.txt`
+- **Python** → `$DOTFILES_PATH/langs/python/requirements.txt`
+- **VSCode** → `$DOTFILES_PATH/editors/code/extensions.txt`
+- **Volta/NPM** → `$DOTFILES_PATH/langs/js/volta.txt` or `npm-global.txt`
+- **Winget** → `$DOTFILES_PATH/os/windows/winget/packages.txt`
+
+**Example:**
+
+```bash
+# Backup all packages before system migration
+dot package dump
+```
+
+<Info>
+  Dump files are automatically created in your dotfiles directory, making them easy to commit and version.
+</Info>
+
+### import
+
+Restores packages from previously dumped backup files.
+
+**Usage:**
+
+```bash
+dot package import
+```
+
+**What it does:**
+
+- Reads dump files from your dotfiles directory
+- Installs packages using the appropriate package manager
+- Supports:
+  - Homebrew (including casks and Mac App Store apps)
+  - Apt packages
+  - Snap packages
+  - Python packages
+  - VSCode extensions
+  - Volta/NPM global packages
+  - Winget packages
+
+**Example:**
+
+```bash
+# Restore packages on a new system
+dot package import
+```
+
+<Warning>
+  Package import can take a long time depending on how many packages you have. Be patient!
+</Warning>
+
+## Common Workflows
+
+<AccordionGroup>
+  <Accordion title="Setting up a new machine">
+    ```bash
+    # 1. Clone your dotfiles
+    git clone https://github.com/yourusername/dotfiles ~/.dotfiles
+    
+    # 2. Install dotly
+    dot self install
+    
+    # 3. Restore all packages
+    dot package import
+    
+    # 4. Apply symlinks
+    dot symlinks apply
+    ```
+  </Accordion>
+
+  <Accordion title="Backing up your current system">
+    ```bash
+    # 1. Dump all packages
+    dot package dump
+    
+    # 2. Commit to your dotfiles repo
+    cd $DOTFILES_PATH
+    git add .
+    git commit -m "Update package lists"
+    git push
+    ```
+  </Accordion>
+
+  <Accordion title="Installing development tools">
+    ```bash
+    # Install common development tools
+    dot package add fzf
+    dot package add ripgrep
+    dot package add git-delta
+    dot package add tldr
+    
+    # Update dump file to include new tools
+    dot package dump
+    ```
+  </Accordion>
+
+  <Accordion title="Weekly maintenance">
+    ```bash
+    # Update all packages
+    dot package update_all
+    
+    # Update package dumps
+    dot package dump
+    
+    # Commit changes
+    cd $DOTFILES_PATH
+    dot git commit "Update packages"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Supported Package Managers
+
+<CardGroup cols={2}>
+  <Card title="macOS" icon="apple">
+    - Homebrew (brew)
+    - Mac App Store (mas)
+    - MacPorts (ports)
+    - Cargo (cargo)
+  </Card>
+  
+  <Card title="Linux" icon="linux">
+    - APT (apt)
+    - DNF (dnf)
+    - YUM (yum)
+    - Pacman (pacman)
+    - Homebrew (brew)
+    - Cargo (cargo)
+    - Snap (snap)
+  </Card>
+  
+  <Card title="Cross-platform" icon="code">
+    - Python pip (pip3)
+    - Node.js npm (npm)
+    - Volta (volta)
+    - Rust cargo (cargo)
+  </Card>
+  
+  <Card title="Development" icon="terminal">
+    - VSCode extensions (code)
+    - PHP Composer (composer)
+    - Ruby gems (gem)
+  </Card>
+</CardGroup>
+
+## Package Recipes
+
+Some packages have custom installation recipes that handle complex setups:
+
+- `git-delta` - Syntax-highlighting pager for git
+- `docpars` - Documentation parser
+- `cargo` - Rust package manager
+
+Recipes are located in `$DOTLY_PATH/scripts/package/recipes/`.

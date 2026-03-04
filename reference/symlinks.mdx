@@ -1,0 +1,293 @@
+---
+title: Symlinks Scripts
+description: Scripts for applying symbolic links to version your app configurations
+---
+
+The `symlinks` context manages symbolic links between your dotfiles and their actual locations in your system. This allows you to version control your application configurations and keep them synchronized across machines.
+
+## Available Scripts
+
+### apply
+
+Applies all symlinks defined in your configuration files.
+
+**Usage:**
+
+```bash
+dot symlinks apply
+```
+
+**What it does:**
+
+1. Reads symlink configurations from YAML files in `$DOTFILES_PATH/symlinks/`
+2. Creates symbolic links using dotbot
+3. Applies platform-specific configurations:
+   - `conf.yaml` - Common symlinks for all platforms
+   - `conf.macos.yaml` - macOS (ARM) specific symlinks
+   - `conf.macos-intel.yaml` - macOS (Intel) specific symlinks
+   - `conf.linux.yaml` - Linux specific symlinks
+
+**Example:**
+
+```bash
+# Apply all symlinks
+dot symlinks apply
+```
+
+<Info>
+  The script automatically detects your platform and applies the appropriate configuration files.
+</Info>
+
+## Configuration Files
+
+Symlink configurations are stored in YAML files:
+
+```yaml
+# $DOTFILES_PATH/symlinks/conf.yaml
+
+# Basic syntax: destination: source
+~/.config/git/config: git/config
+~/.config/git/ignore: git/ignore
+
+# VSCode settings
+~/.config/Code/User/settings.json: editors/code/settings.json
+~/.config/Code/User/keybindings.json: editors/code/keybindings.json
+
+# Shell configs
+~/.bashrc: shell/bash/.bashrc
+~/.zshrc: shell/zsh/.zshrc
+```
+
+### Platform-Specific Configs
+
+**macOS example** (`conf.macos.yaml`):
+
+```yaml
+# macOS specific paths
+~/Library/Application Support/Code/User/settings.json: editors/code/settings.json
+~/Library/Application Support/Code/User/keybindings.json: editors/code/keybindings.json
+```
+
+**Linux example** (`conf.linux.yaml`):
+
+```yaml
+# Linux specific paths
+~/.config/Code/User/settings.json: editors/code/settings.json
+~/.config/Code/User/keybindings.json: editors/code/keybindings.json
+```
+
+## How to Version Control Configs
+
+To version control a configuration file:
+
+### Step 1: Copy Config to Dotfiles
+
+Copy the config file from its current location to your dotfiles:
+
+```bash
+# Example: VSCode settings
+cp ~/Library/Application\ Support/Code/User/settings.json \
+   $DOTFILES_PATH/editors/code/settings.json
+```
+
+### Step 2: Add Symlink Configuration
+
+Edit the appropriate YAML file and add the symlink:
+
+```yaml
+# For macOS: $DOTFILES_PATH/symlinks/conf.macos.yaml
+~/Library/Application Support/Code/User/settings.json: editors/code/settings.json
+
+# For Linux: $DOTFILES_PATH/symlinks/conf.linux.yaml
+~/.config/Code/User/settings.json: editors/code/settings.json
+```
+
+### Step 3: Apply Symlinks
+
+```bash
+dot symlinks apply
+```
+
+### Step 4: Commit to Git
+
+```bash
+cd $DOTFILES_PATH
+git add editors/code/settings.json symlinks/conf.macos.yaml
+git commit -m "Add VSCode settings"
+git push
+```
+
+## Common Configurations
+
+<AccordionGroup>
+  <Accordion title="Git Configuration">
+    ```yaml
+    # $DOTFILES_PATH/symlinks/conf.yaml
+    ~/.gitconfig: git/config
+    ~/.gitignore_global: git/ignore
+    ```
+    
+    Then copy your configs:
+    ```bash
+    cp ~/.gitconfig $DOTFILES_PATH/git/config
+    cp ~/.gitignore_global $DOTFILES_PATH/git/ignore
+    dot symlinks apply
+    ```
+  </Accordion>
+
+  <Accordion title="Shell Configurations">
+    ```yaml
+    # $DOTFILES_PATH/symlinks/conf.yaml
+    ~/.bashrc: shell/bash/.bashrc
+    ~/.bash_profile: shell/bash/.bash_profile
+    ~/.zshrc: shell/zsh/.zshrc
+    ~/.zshenv: shell/zsh/.zshenv
+    ```
+  </Accordion>
+
+  <Accordion title="Editor Settings">
+    **VSCode (macOS):**
+    ```yaml
+    # $DOTFILES_PATH/symlinks/conf.macos.yaml
+    ~/Library/Application Support/Code/User/settings.json: editors/code/settings.json
+    ~/Library/Application Support/Code/User/keybindings.json: editors/code/keybindings.json
+    ~/Library/Application Support/Code/User/snippets: editors/code/snippets
+    ```
+    
+    **VSCode (Linux):**
+    ```yaml
+    # $DOTFILES_PATH/symlinks/conf.linux.yaml
+    ~/.config/Code/User/settings.json: editors/code/settings.json
+    ~/.config/Code/User/keybindings.json: editors/code/keybindings.json
+    ~/.config/Code/User/snippets: editors/code/snippets
+    ```
+    
+    **Vim:**
+    ```yaml
+    ~/.vimrc: editors/vim/.vimrc
+    ~/.vim: editors/vim/.vim
+    ```
+  </Accordion>
+
+  <Accordion title="Language Configurations">
+    ```yaml
+    # Node.js
+    ~/.npmrc: langs/js/.npmrc
+    
+    # Python
+    ~/.pypirc: langs/python/.pypirc
+    
+    # Ruby
+    ~/.gemrc: langs/ruby/.gemrc
+    ~/.irbrc: langs/ruby/.irbrc
+    
+    # Rust
+    ~/.cargo/config: langs/rust/cargo-config
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Dotfiles Directory Structure
+
+Recommended structure for organizing configs:
+
+```
+$DOTFILES_PATH/
+├── editors/
+│   ├── code/              # VSCode settings
+│   ├── vim/               # Vim configuration
+│   └── idea/              # IntelliJ IDEA settings
+├── git/
+│   ├── config             # Git config
+│   └── ignore             # Global gitignore
+├── langs/
+│   ├── js/                # JavaScript/Node.js
+│   ├── python/            # Python
+│   ├── ruby/              # Ruby
+│   └── rust/              # Rust
+├── os/
+│   ├── mac/               # macOS specific
+│   └── linux/             # Linux specific
+├── shell/
+│   ├── bash/              # Bash configs
+│   └── zsh/               # Zsh configs
+└── symlinks/
+    ├── conf.yaml          # Common symlinks
+    ├── conf.macos.yaml    # macOS symlinks
+    └── conf.linux.yaml    # Linux symlinks
+```
+
+## Troubleshooting
+
+<Accordion title="Symlink already exists">
+  If a symlink target already exists, dotbot will skip it. To force replacement:
+  
+  ```bash
+  # Backup existing file
+  mv ~/.vimrc ~/.vimrc.backup
+  
+  # Apply symlinks
+  dot symlinks apply
+  ```
+</Accordion>
+
+<Accordion title="Permission denied">
+  Some system files may require elevated permissions:
+  
+  ```bash
+  # Don't symlink system files - copy instead
+  sudo cp $DOTFILES_PATH/os/mac/defaults/NSGlobalDomain.plist \
+          ~/Library/Preferences/.GlobalPreferences.plist
+  ```
+</Accordion>
+
+<Accordion title="Path not found">
+  Ensure parent directories exist:
+  
+  ```bash
+  # Create parent directory first
+  mkdir -p ~/.config/Code/User
+  
+  # Then apply symlinks
+  dot symlinks apply
+  ```
+</Accordion>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Keep it organized" icon="folder-tree">
+    Group related configs together (editors, langs, shell, etc.)
+  </Card>
+  
+  <Card title="Use platform files" icon="computer">
+    Put platform-specific paths in `conf.macos.yaml` or `conf.linux.yaml`
+  </Card>
+  
+  <Card title="Commit regularly" icon="git">
+    Commit config changes so they sync across machines
+  </Card>
+  
+  <Card title="Test on new machine" icon="flask">
+    Verify symlinks work when restoring on a fresh system
+  </Card>
+</CardGroup>
+
+## Using with Dotbot
+
+Dotly uses [dotbot](https://github.com/anishathalye/dotbot) under the hood. The symlink YAML files support all dotbot features:
+
+```yaml
+# Advanced dotbot options
+~/.config/app/config.yml:
+  path: apps/myapp/config.yml
+  create: true              # Create parent directories
+  force: true               # Overwrite existing files
+  
+# Conditional linking
+~/.config/linux-only: 
+  path: configs/linux-specific
+  if: '[ $(uname) = Linux ]'
+```
+
+See the [dotbot documentation](https://github.com/anishathalye/dotbot) for more options.

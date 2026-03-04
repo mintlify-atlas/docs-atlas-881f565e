@@ -1,0 +1,482 @@
+---
+title: Creating Custom Scripts
+description: Learn how to write custom scripts for your dotfiles and extend dotly
+---
+
+Dotly makes it easy to create custom scripts that integrate seamlessly with the `dot` command and leverage dotly's core utilities.
+
+## Quick Start
+
+<Steps>
+  <Step title="Create script directory">
+    Create a context directory in your dotfiles scripts folder:
+    
+    ```bash
+    mkdir -p $DOTFILES_PATH/scripts/mycontext
+    ```
+  </Step>
+  
+  <Step title="Create script file">
+    Create your script file (no extension needed):
+    
+    ```bash
+    touch $DOTFILES_PATH/scripts/mycontext/myscript
+    ```
+  </Step>
+  
+  <Step title="Make it executable">
+    ```bash
+    chmod +x $DOTFILES_PATH/scripts/mycontext/myscript
+    ```
+  </Step>
+  
+  <Step title="Run your script">
+    ```bash
+    dot mycontext myscript
+    ```
+  </Step>
+</Steps>
+
+## Script Structure
+
+Every dotly script should follow this structure:
+
+```bash
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+##? Brief description of what the script does
+##?
+##? Usage:
+##?   script_name
+##?   script_name <arg1> [<optional_arg>]
+docs::parse "$@"
+
+# Your script implementation here
+```
+
+### Essential Components
+
+<Accordion title="Shebang and Options">
+```bash
+#!/usr/bin/env bash
+
+set -euo pipefail
+```
+
+- `#!/usr/bin/env bash` - Ensures the script runs with bash
+- `set -e` - Exit on error
+- `set -u` - Exit on undefined variable
+- `set -o pipefail` - Exit on pipe failure
+</Accordion>
+
+<Accordion title="Core Utilities">
+```bash
+source "$DOTLY_PATH/scripts/core/_main.sh"
+```
+
+This single line loads all core utilities:
+- `args` - Argument parsing helpers
+- `collections` - Collection manipulation
+- `documentation` - Documentation parsing
+- `dot` - Script discovery and listing
+- `git` - Git helpers
+- `log` - Logging functions
+- `platform` - Platform detection
+- `output` - Formatted output
+- `script` - Script utilities
+- `str` - String manipulation
+</Accordion>
+
+<Accordion title="Documentation and Help Text">
+```bash
+##? Brief description of what the script does
+##?
+##? Usage:
+##?   script_name
+##?   script_name <arg1> <arg2>
+##?   script_name --option
+docs::parse "$@"
+```
+
+Lines starting with `##?` define the help text:
+- First line: Brief description
+- `Usage:` section: Show how to use the script
+- `<arg>` - Required argument
+- `[<arg>]` - Optional argument
+
+The `docs::parse` function parses these comments and arguments using `docpars`.
+</Accordion>
+
+## Real Script Examples
+
+### Example 1: Simple Script with Message
+
+```bash
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+##? Add a hello message
+##?
+##? Usage:
+##?    hello
+docs::parse "$@"
+
+echo "Hello from dotly!"
+```
+
+<Note>
+This is adapted from the actual `surprise/hello` script in the dotly template.
+</Note>
+
+### Example 2: Script with Arguments
+
+```bash
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+##? Add all files and then commit
+##?
+##? Usage:
+##?   commit
+##?   commit <message>
+docs::parse "$@"
+
+git add -A
+
+if [ -z "$message" ]; then
+	git commit
+else
+	git commit -m"$1"
+fi
+```
+
+<Note>
+This is the actual `git/commit` script from dotly.
+</Note>
+
+### Example 3: Interactive Script with fzf
+
+```bash
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+##? Git log filtering
+##?
+##? Usage:
+##?   pretty-log
+docs::parse "$@"
+
+commit=$(
+	git log --graph \
+		--color=always \
+		--date=human \
+		--format="%C(auto)%h%d %s %C(black)%C(bold)%ad by %an" |
+		fzf --ansi --no-sort \
+			--preview '
+        __commit="$(echo {} | grep -o "[a-f0-9]\{7\}")";
+          git diff-tree --no-commit-id --name-status -r ${__commit}
+        ' \
+			--preview-window right:35%
+)
+
+commit_hash=$(echo ${commit} | grep -o '[a-f0-9]\{7\}')
+
+echo ${commit_hash} | tr -d '\n' | pbcopy
+```
+
+<Note>
+This is the actual `git/pretty-log` script that shows how to create interactive fuzzy-finding scripts.
+</Note>
+
+### Example 4: Script with Dependencies
+
+```bash
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+##? Apply all symlinks
+##?
+##? Usage:
+##?    apply
+docs::parse "$@"
+
+symlinks::apply() {
+	local -r CONFIG="$DOTFILES_PATH/symlinks/$1"
+	shift
+
+	echo
+	"$DOTLY_PATH/modules/dotbot/bin/dotbot" -d "$DOTFILES_PATH" -c "$CONFIG" "$@"
+	echo
+}
+
+symlinks::apply "conf.yaml"
+
+if platform::is_macos; then
+	if platform::is_macos_arm; then
+		symlinks::apply "conf.macos.yaml"
+	else
+		symlinks::apply "conf.macos-intel.yaml"
+	fi
+else
+	symlinks::apply "conf.linux.yaml"
+fi
+
+log::success "Done!"
+```
+
+<Note>
+This is the actual `symlinks/apply` script showing platform detection and custom functions.
+</Note>
+
+## Using Core Utilities
+
+### Output Functions
+
+```bash
+output::write "Regular message"
+output::answer " > Answer with prefix"
+output::error "Error message in red"
+output::solution "Solution message in green"
+
+# Ask user for input
+answer=$(output::question "Do you want to continue? [Y/n]")
+
+if output::answer_is_yes "$answer"; then
+    output::write "Continuing..."
+fi
+
+# Headers
+output::h1 "Main Header"
+output::h2 "Sub Header"
+output::h3 "Section Header"
+```
+
+### Script Dependencies
+
+Automatically check and install dependencies:
+
+```bash
+# Check for required commands and offer to install them
+script::depends_on fzf jq ripgrep
+```
+
+If a dependency is missing, dotly will:
+1. Ask the user if they want to install it
+2. Install it using `dot package add`
+3. Continue execution or exit if declined
+
+### Platform Detection
+
+```bash
+if platform::is_macos; then
+    output::write "Running on macOS"
+    
+    if platform::is_macos_arm; then
+        output::write "Apple Silicon detected"
+    fi
+elif platform::is_linux; then
+    output::write "Running on Linux"
+fi
+
+# Check if command exists
+if platform::command_exists "docker"; then
+    output::write "Docker is installed"
+fi
+```
+
+### Logging
+
+```bash
+# Log to file while showing output
+some_command 2>&1 | log::file "Installing package"
+
+# Success message
+log::success "Operation completed!"
+```
+
+## Argument Parsing
+
+The `docs::parse` function automatically creates variables from your usage documentation:
+
+```bash
+##? Install a package
+##?
+##? Usage:
+##?    add <package_name> [--skip-recipe]
+docs::parse "$@"
+
+# Variables are automatically created:
+# $package_name - first argument
+# $skip_recipe - will be set if --skip-recipe is passed
+
+output::write "Installing $package_name"
+
+if [ -n "$skip_recipe" ]; then
+    output::write "Skipping recipe installation"
+fi
+```
+
+## Testing Your Scripts
+
+### Manual Testing
+
+<Steps>
+  <Step title="Test script discovery">
+    ```bash
+    # Your script should appear in the list
+    dot mycontext
+    ```
+  </Step>
+  
+  <Step title="Test help text">
+    ```bash
+    # Should show your ##? documentation
+    dot mycontext myscript -h
+    ```
+  </Step>
+  
+  <Step title="Test execution">
+    ```bash
+    # Run with various arguments
+    dot mycontext myscript arg1 arg2
+    ```
+  </Step>
+  
+  <Step title="Test error handling">
+    ```bash
+    # Try invalid arguments and edge cases
+    dot mycontext myscript
+    ```
+  </Step>
+</Steps>
+
+### Debugging
+
+```bash
+# Add debug output
+set -x  # Enable command tracing
+
+# Or use dotly debug mode
+dot self debug
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use Core Utilities" icon="toolbox">
+    Leverage dotly's core utilities instead of reinventing the wheel
+  </Card>
+  
+  <Card title="Write Help Text" icon="book">
+    Always include `##?` documentation so users know how to use your script
+  </Card>
+  
+  <Card title="Handle Errors" icon="shield">
+    Use `set -euo pipefail` and check for errors appropriately
+  </Card>
+  
+  <Card title="Make Executable" icon="key">
+    Remember to `chmod +x` your scripts
+  </Card>
+  
+  <Card title="Use Descriptive Names" icon="tag">
+    Choose clear context and script names that indicate purpose
+  </Card>
+  
+  <Card title="Test Thoroughly" icon="check">
+    Test your scripts with different arguments and edge cases
+  </Card>
+</CardGroup>
+
+## Script Organization Tips
+
+### Context Naming
+
+Choose contexts that group related scripts:
+
+- `dev` - Development workflow scripts
+- `deploy` - Deployment automation
+- `backup` - Backup utilities
+- `database` - Database management
+- `docker` - Docker helpers
+- `project` - Project-specific tasks
+
+### Reusable Functions
+
+For complex scripts, create a utils file:
+
+```bash
+# scripts/mycontext/utils.sh
+mycontext::helper_function() {
+    # Shared logic
+}
+```
+
+Then source it in your scripts:
+
+```bash
+source "$DOTFILES_PATH/scripts/mycontext/utils.sh"
+```
+
+## Advanced Examples
+
+### Script with Package Manager Detection
+
+```bash
+#!/usr/bin/env bash
+
+source "$DOTLY_PATH/scripts/core/_main.sh"
+source "$DOTLY_PATH/scripts/package/recipes/_registry.sh"
+
+##? Install a package
+##?
+##? Usage:
+##?    add <package_name> [--skip-recipe]
+docs::parse "$@"
+
+package_name="$1"
+
+# Check if already installed
+if platform::command_exists "$package_name" || registry::is_installed "$package_name"; then
+    log::success "$package_name already installed"
+    exit 0
+fi
+
+# Install using appropriate package manager
+if platform::is_macos; then
+    for package_manager in brew mas cargo; do
+        package::install $package_manager "$package_name" && exit 0
+    done
+else
+    for package_manager in apt dnf yum pacman cargo; do
+        package::install $package_manager "$package_name" && exit 0
+    done
+fi
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Scripts Overview" icon="list" href="/scripts/overview">
+    Browse all built-in scripts
+  </Card>
+  <Card title="Core Utilities Reference" icon="book-open" href="/scripts/custom-scripts#core-utilities">
+    Detailed documentation of all core utilities
+  </Card>
+</CardGroup>

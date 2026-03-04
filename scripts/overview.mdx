@@ -1,0 +1,381 @@
+---
+title: Scripts Overview
+description: Understanding dotly's built-in scripts and how the script system works
+---
+
+Dotly includes a powerful script system organized by context, allowing you to automate common development tasks and create custom workflows.
+
+## Script Organization
+
+Scripts are organized into contexts (directories) based on their purpose:
+
+<CardGroup cols={2}>
+  <Card title="dotfiles" icon="folder">
+    Create and import dotfiles structures
+  </Card>
+  <Card title="git" icon="git-alt">
+    Git utilities and workflow helpers
+  </Card>
+  <Card title="mac" icon="apple">
+    macOS-specific utilities
+  </Card>
+  <Card title="package" icon="box">
+    Package manager operations
+  </Card>
+  <Card title="self" icon="gear">
+    Dotly maintenance and updates
+  </Card>
+  <Card title="shell" icon="terminal">
+    Shell configuration helpers
+  </Card>
+  <Card title="symlinks" icon="link">
+    Symlink management
+  </Card>
+</CardGroup>
+
+## The `dot` Command
+
+The `dot` command is the core of dotly's script system. It provides an interactive interface to discover and run scripts.
+
+### Basic Usage
+
+```bash
+# Interactive mode - browse all available scripts
+dot
+
+# Browse scripts in a specific context
+dot git
+
+# Run a specific script
+dot <context> <script> [args...]
+
+# Show help
+dot -h
+```
+
+### Examples
+
+```bash
+# Commit all changes
+dot git commit "Add new feature"
+
+# Install a package
+dot package add fzf
+
+# Apply symlinks
+dot symlinks apply
+
+# Update dotly
+dot self update
+```
+
+<Note>
+When you run `dot` without arguments, it opens an interactive fuzzy finder (fzf) that lets you search and preview all available scripts.
+</Note>
+
+## How Scripts Work
+
+### Script Discovery
+
+Dotly discovers scripts from two locations:
+
+1. **Built-in scripts**: `$DOTLY_PATH/scripts/`
+2. **Custom scripts**: `$DOTFILES_PATH/scripts/`
+
+Custom scripts in your dotfiles take precedence over built-in scripts with the same name.
+
+### Script Execution
+
+When you run a script:
+
+<Steps>
+  <Step title="Parse command">
+    The `dot` command parses the context and script name from your input
+  </Step>
+  <Step title="Locate script">
+    Searches for the script in your dotfiles first, then in dotly's built-in scripts
+  </Step>
+  <Step title="Execute">
+    Runs the script with any provided arguments
+  </Step>
+</Steps>
+
+## Built-in Scripts Reference
+
+### Dotfiles Context
+
+<Accordion title="dotfiles create">
+Creates the complete dotfiles directory structure.
+
+```bash
+dot dotfiles create
+```
+
+Generates directories for:
+- `bin/` - External binaries and symlinks
+- `editors/` - Editor configurations
+- `git/` - Git configuration
+- `langs/` - Programming language configs
+- `os/` - OS-specific configurations
+- `scripts/` - Your custom scripts
+- `shell/` - Shell configuration files
+- `symlinks/` - Symlink definitions
+</Accordion>
+
+<Accordion title="dotfiles import">
+Import existing dotfiles from a repository.
+
+```bash
+dot dotfiles import
+```
+</Accordion>
+
+### Git Context
+
+<Accordion title="git commit">
+Add all files and create a commit.
+
+```bash
+# Interactive commit message
+dot git commit
+
+# Commit with message
+dot git commit "Fix bug in parser"
+```
+</Accordion>
+
+<Accordion title="git pretty-log">
+Interactive git log viewer with fuzzy search. Copies selected commit hash to clipboard.
+
+```bash
+dot git pretty-log
+```
+</Accordion>
+
+<Accordion title="git pretty-diff">
+Show pretty git diff using fzf and copy selected path to clipboard.
+
+```bash
+dot git pretty-diff
+```
+</Accordion>
+
+<Accordion title="git amend">
+Amend the last commit.
+
+```bash
+dot git amend
+```
+</Accordion>
+
+<Accordion title="git apply-gitignore">
+Exclude all committed files that are in the project's .gitignore.
+
+```bash
+dot git apply-gitignore
+```
+</Accordion>
+
+<Accordion title="git changed-files">
+Show all changed files compared to main branch.
+
+```bash
+dot git changed-files
+```
+</Accordion>
+
+<Accordion title="git contributors">
+List contributors with number of commits.
+
+```bash
+dot git contributors
+```
+</Accordion>
+
+<Accordion title="git find">
+Find commits by commit message.
+
+```bash
+dot git find "search term"
+```
+</Accordion>
+
+<Accordion title="git rm-file-history">
+Completely remove a file from the repository history.
+
+```bash
+dot git rm-file-history path/to/file
+```
+</Accordion>
+
+### Package Context
+
+<Accordion title="package add">
+Install a package using the best available package manager.
+
+```bash
+dot package add <package_name>
+
+# Skip recipe installation
+dot package add <package_name> --skip-recipe
+```
+
+On macOS, tries: brew, mas, ports, cargo  
+On Linux, tries: apt, dnf, yum, brew, pacman, cargo
+</Accordion>
+
+<Accordion title="package import">
+Import previously dumped packages.
+
+```bash
+dot package import
+```
+</Accordion>
+
+<Accordion title="package dump">
+Dump all installed packages to files.
+
+```bash
+dot package dump
+```
+
+Creates dump files for all package managers you use.
+</Accordion>
+
+<Accordion title="package update_all">
+Update all packages across all package managers.
+
+```bash
+dot package update_all
+```
+</Accordion>
+
+### Self Context
+
+<Accordion title="self install">
+Install dotly and set up your dotfiles.
+
+```bash
+dot self install
+```
+
+This command:
+- Creates dotfiles structure
+- Backs up existing config files
+- Sets up symlinks
+- Installs Zim (ZSH framework)
+- Runs restoration scripts
+</Accordion>
+
+<Accordion title="self update">
+Update dotly to the latest stable release.
+
+```bash
+dot self update
+```
+</Accordion>
+
+<Accordion title="self debug">
+Debug dotly issues.
+
+```bash
+dot self debug
+```
+
+Run in parallel with another command to see error output.
+</Accordion>
+
+<Accordion title="self lint">
+Lint all dotly-related bash files.
+
+```bash
+dot self lint
+```
+</Accordion>
+
+<Accordion title="self static_analysis">
+Run static analysis on all dotly-related bash files.
+
+```bash
+dot self static_analysis
+```
+</Accordion>
+
+### Symlinks Context
+
+<Accordion title="symlinks apply">
+Apply all configured symlinks.
+
+```bash
+dot symlinks apply
+```
+
+Applies symlinks from:
+- `conf.yaml` (all platforms)
+- `conf.macos.yaml` or `conf.macos-intel.yaml` (macOS)
+- `conf.linux.yaml` (Linux)
+</Accordion>
+
+### Mac Context
+
+<Accordion title="mac brew">
+Brew utilities for managing Homebrew packages.
+
+```bash
+dot mac brew
+```
+</Accordion>
+
+<Accordion title="mac defaults">
+Utilities to view, import, and export macOS defaults.
+
+```bash
+dot mac defaults
+```
+</Accordion>
+
+### Shell Context
+
+<Accordion title="shell zsh">
+ZSH helpers and utilities.
+
+```bash
+dot shell zsh
+```
+</Accordion>
+
+## Script Structure
+
+Each script follows this structure:
+
+```bash
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+##? Description of what the script does
+##?
+##? Usage:
+##?   script_name
+##?   script_name <arg1> <arg2>
+docs::parse "$@"
+
+# Script implementation
+```
+
+<Note>
+The `##?` comments are used to generate help text. Run any script with `-h` to see its documentation.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create Custom Scripts" icon="code" href="/scripts/custom-scripts">
+    Learn how to write your own scripts
+  </Card>
+  <Card title="Core Utilities" icon="toolbox" href="/scripts/custom-scripts#core-utilities">
+    Explore dotly's core utility functions
+  </Card>
+</CardGroup>

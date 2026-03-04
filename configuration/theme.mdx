@@ -1,0 +1,489 @@
+---
+title: Theme Customization
+description: Customize the appearance and behavior of the CODELY shell theme
+---
+
+## About the CODELY Theme
+
+Dotly includes an **opinionated, minimal, and fast** shell theme called CODELY. It provides:
+
+- **Fast performance** - Optimized for quick prompt rendering
+- **Git integration** - Shows branch name and status
+- **Minimal design** - Clean, distraction-free interface
+- **Cross-shell support** - Works with both Bash and Zsh
+- **Color modes** - Dark and light color schemes
+- **Customizable** - Configure via environment variables
+
+<Frame>
+  ```bash
+  <▸> ~/dotfiles feature/docs ✓ 
+  ```
+  <caption>Example CODELY theme prompt in dark mode</caption>
+</Frame>
+
+## Theme Components
+
+The CODELY theme displays:
+
+1. **Status icon** - `<▸>` when last command succeeded, `<▪>` when it failed
+2. **Current directory** - Full, short, or home-relative path
+3. **Git branch** - Current branch name (if in a git repo)
+4. **Git status** - `✓` for clean, `✗` for uncommitted changes
+
+## Configuration Variables
+
+Configure the theme by setting environment variables in `$DOTFILES_PATH/shell/exports.sh`:
+
+### CODELY_THEME_MINIMAL
+
+Show only the status icon, hiding directory and git info.
+
+```bash
+export CODELY_THEME_MINIMAL=false  # Default: show full prompt
+# or
+export CODELY_THEME_MINIMAL=true   # Minimal: show only status icon
+```
+
+<CodeGroup>
+```bash Full Prompt (minimal=false)
+<▸> ~/projects/myapp main ✓ 
+```
+
+```bash Minimal Prompt (minimal=true)
+<▸> 
+```
+</CodeGroup>
+
+<Tip>
+  Use minimal mode for distraction-free coding or when working on small screens.
+</Tip>
+
+### CODELY_THEME_MODE
+
+Set the color scheme to match your terminal background.
+
+```bash
+export CODELY_THEME_MODE="dark"   # Default: dark colors
+# or
+export CODELY_THEME_MODE="light"  # Light colors
+```
+
+**Dark mode colors:**
+- Git branch: green
+- Directory: yellow
+- Git status clean: white
+- Git status dirty: yellow
+- Status OK: green
+- Status error: red
+
+**Light mode colors:**
+- Git branch: black
+- Directory: black
+- Git status clean: green
+- Git status dirty: magenta
+- Status OK: black
+- Status error: red
+
+<Note>
+  The theme mode also affects `fzf` colors, creating a consistent visual experience across your tools.
+</Note>
+
+### CODELY_THEME_PROMPT_IN_NEW_LINE
+
+Place the prompt cursor on a new line for better readability with long paths.
+
+```bash
+export CODELY_THEME_PROMPT_IN_NEW_LINE=false  # Default: single line
+# or
+export CODELY_THEME_PROMPT_IN_NEW_LINE=true   # Multi-line prompt
+```
+
+<CodeGroup>
+```bash Single Line (new_line=false)
+<▸> ~/very/long/path/to/project main ✓ 
+```
+
+```bash Multi-Line (new_line=true)
+╭<▸> ~/very/long/path/to/project main ✓
+╰ 
+```
+</CodeGroup>
+
+<Tip>
+  Multi-line mode is useful when working in deep directory structures or with long branch names.
+</Tip>
+
+### CODELY_THEME_PWD_MODE
+
+Control how the current directory is displayed.
+
+```bash
+export CODELY_THEME_PWD_MODE="short"  # Default: first letter of each dir
+# or
+export CODELY_THEME_PWD_MODE="full"   # Full absolute path
+# or
+export CODELY_THEME_PWD_MODE="home_relative"  # Path relative to home
+```
+
+<CodeGroup>
+```bash Short Mode
+<▸> ~/p/m/d/s/dotly 
+```
+
+```bash Full Mode
+<▸> /Users/username/projects/mycompany/dotfiles/src/dotly 
+```
+
+```bash Home Relative Mode
+<▸> ~/projects/mycompany/dotfiles/src/dotly 
+```
+</CodeGroup>
+
+**When to use each mode:**
+
+<CardGroup cols={3}>
+  <Card title="short">
+    Best for most use cases. Saves space while showing directory structure.
+  </Card>
+
+  <Card title="full">
+    When you need to see absolute paths (e.g., working with symlinks).
+  </Card>
+
+  <Card title="home_relative">
+    When you want full context but prefer `~` over `/Users/username`.
+  </Card>
+</CardGroup>
+
+### CODELY_THEME_STATUS_ICON_OK
+
+Customize the icon shown when the last command succeeded.
+
+```bash
+export CODELY_THEME_STATUS_ICON_OK="▸"  # Default
+# or any other character/emoji
+export CODELY_THEME_STATUS_ICON_OK="✓"
+export CODELY_THEME_STATUS_ICON_OK="→"
+export CODELY_THEME_STATUS_ICON_OK="$"
+```
+
+### CODELY_THEME_STATUS_ICON_KO
+
+Customize the icon shown when the last command failed.
+
+```bash
+export CODELY_THEME_STATUS_ICON_KO="▪"  # Default
+# or any other character/emoji
+export CODELY_THEME_STATUS_ICON_KO="✗"
+export CODELY_THEME_STATUS_ICON_KO="!"
+export CODELY_THEME_STATUS_ICON_KO="×"
+```
+
+<Tip>
+  If you're color blind, use distinct icons to differentiate success from failure:
+  ```bash
+  export CODELY_THEME_STATUS_ICON_OK="✓"
+  export CODELY_THEME_STATUS_ICON_KO="✗"
+  ```
+</Tip>
+
+## Configuration Examples
+
+### Default Configuration
+
+This is the default theme configuration in `shell/exports.sh`:
+
+```bash shell/exports.sh
+# ------------------------------------------------------------------------------
+# Codely theme config
+# ------------------------------------------------------------------------------
+export CODELY_THEME_MINIMAL=false
+export CODELY_THEME_MODE="dark"
+export CODELY_THEME_PROMPT_IN_NEW_LINE=false
+export CODELY_THEME_PWD_MODE="short" # full, short, home_relative
+```
+
+### Minimal Setup
+
+For a super clean, distraction-free prompt:
+
+```bash
+export CODELY_THEME_MINIMAL=true
+export CODELY_THEME_MODE="dark"
+export CODELY_THEME_PROMPT_IN_NEW_LINE=false
+export CODELY_THEME_STATUS_ICON_OK="$"
+export CODELY_THEME_STATUS_ICON_KO="!"
+```
+
+Result: `$ ` or `! ` depending on last command status
+
+### Detailed Setup
+
+For maximum context and readability:
+
+```bash
+export CODELY_THEME_MINIMAL=false
+export CODELY_THEME_MODE="dark"
+export CODELY_THEME_PROMPT_IN_NEW_LINE=true
+export CODELY_THEME_PWD_MODE="home_relative"
+```
+
+Result:
+```bash
+╭<▸> ~/projects/mycompany/dotfiles/src main ✓
+╰ 
+```
+
+### Light Mode Setup
+
+For light terminal backgrounds:
+
+```bash
+export CODELY_THEME_MINIMAL=false
+export CODELY_THEME_MODE="light"
+export CODELY_THEME_PROMPT_IN_NEW_LINE=false
+export CODELY_THEME_PWD_MODE="short"
+```
+
+### Accessibility Setup
+
+For better visibility and differentiation:
+
+```bash
+export CODELY_THEME_MINIMAL=false
+export CODELY_THEME_MODE="dark"
+export CODELY_THEME_PROMPT_IN_NEW_LINE=true
+export CODELY_THEME_PWD_MODE="home_relative"
+export CODELY_THEME_STATUS_ICON_OK="✓"
+export CODELY_THEME_STATUS_ICON_KO="✗"
+```
+
+## How It Works
+
+### Zsh Implementation
+
+The theme is implemented in `shell/zsh/themes/prompt_codely_setup`:
+
+```bash Key theme logic (excerpt)
+CODELY_THEME_MINIMAL=${CODELY_THEME_MINIMAL:-false}
+CODELY_THEME_MODE=${CODELY_THEME_MODE:-"dark"}
+CODELY_THEME_PROMPT_IN_NEW_LINE=${CODELY_THEME_PROMPT_IN_NEW_LINE:-false}
+CODELY_THEME_PWD_MODE=${CODELY_THEME_PWD_MODE:-"short"}
+
+CODELY_THEME_STATUS_ICON_OK=${CODELY_THEME_STATUS_ICON_OK:-"▸"}
+CODELY_THEME_STATUS_ICON_KO=${CODELY_THEME_STATUS_ICON_KO:-"▪"}
+
+if [ "$CODELY_THEME_MODE" = "dark" ]; then
+  git_branch_color="green"
+  pwd_color="yellow"
+  status_icon_color_ok="green"
+  status_icon_color_ko="red"
+else
+  git_branch_color="black"
+  pwd_color="black"
+  status_icon_color_ok="black"
+  status_icon_color_ko="red"
+fi
+
+prompt_codely_pwd() {
+  case "$CODELY_THEME_PWD_MODE" in
+    short) local -r prompt_dir=$("$DOTLY_PATH/bin/dot" core short_pwd) ;;
+    full) local -r prompt_dir="$PWD" ;;
+    home_relative) local -r prompt_dir=$(print -rD "$PWD") ;;
+  esac
+
+  print -n "%F{$pwd_color}${prompt_dir}"
+}
+```
+
+### Bash Implementation
+
+The Bash version in `shell/bash/themes/codely.sh` provides similar functionality:
+
+```bash shell/bash/themes/codely.sh
+#!/usr/bin/env bash
+PROMPT_COMMAND="codely_theme"
+
+MIDDLE_CHARACTER="◂"
+GREEN_COLOR="32"
+RED_COLOR="31"
+
+codely_theme() {
+	LAST_CODE="$?"
+	current_dir=$(dot core short_pwd)
+	STATUS_COLOR=$GREEN_COLOR
+
+	if [ $LAST_CODE -ne 0 ]; then
+		STATUS_COLOR=$RED_COLOR
+		MIDDLE_CHARACTER="▪"
+	fi
+
+	if [ -z "$CODELY_THEME_MINIMAL" ]; then
+		export PS1="\[\e[${STATUS_COLOR}m\]<\[\e[m\]${MIDDLE_CHARACTER}\[\e[${STATUS_COLOR}m\]>\[\e[m\] \[\e[33m\]${current_dir}\[\e[m\] "
+	else
+		export PS1="\[\e[${STATUS_COLOR}m\]<\[\e[m\]${MIDDLE_CHARACTER}\[\e[${STATUS_COLOR}m\]>\[\e[m\] "
+	fi
+}
+```
+
+## Applying Theme Changes
+
+<Steps>
+  <Step title="Edit exports.sh">
+    Open your shell exports file:
+    ```bash
+    code $DOTFILES_PATH/shell/exports.sh
+    # or
+    vim $DOTFILES_PATH/shell/exports.sh
+    ```
+  </Step>
+
+  <Step title="Update theme variables">
+    Modify the CODELY theme configuration section:
+    ```bash
+    # ------------------------------------------------------------------------------
+    # Codely theme config
+    # ------------------------------------------------------------------------------
+    export CODELY_THEME_MINIMAL=false
+    export CODELY_THEME_MODE="light"  # Changed to light mode
+    export CODELY_THEME_PROMPT_IN_NEW_LINE=true  # Enable multi-line
+    export CODELY_THEME_PWD_MODE="home_relative"
+    ```
+  </Step>
+
+  <Step title="Reload your shell">
+    Apply changes immediately:
+    ```bash
+    source ~/.zshrc  # for Zsh
+    # or
+    source ~/.bashrc  # for Bash
+    ```
+  </Step>
+
+  <Step title="Commit your changes">
+    Save your customizations:
+    ```bash
+    cd $DOTFILES_PATH
+    git add shell/exports.sh
+    git commit -m "Customize CODELY theme"
+    git push
+    ```
+  </Step>
+</Steps>
+
+## Integration with Other Tools
+
+### FZF Color Integration
+
+The theme mode automatically configures `fzf` colors to match:
+
+```bash From shell/exports.sh
+if [ "$CODELY_THEME_MODE" = "dark" ]; then
+	fzf_colors="pointer:#ebdbb2,bg+:#3c3836,fg:#ebdbb2,fg+:#fbf1c7,hl:#8ec07c,info:#928374,header:#fb4934"
+else
+	fzf_colors="pointer:#db0f35,bg+:#d6d6d6,fg:#808080,fg+:#363636,hl:#8ec07c,info:#928374,header:#fffee3"
+fi
+
+export FZF_DEFAULT_OPTS="--color=$fzf_colors --reverse"
+```
+
+This ensures a consistent visual experience when using fuzzy finding features.
+
+### Git Integration
+
+The theme integrates with Zim's git-info module to show:
+- Current branch name
+- Clean/dirty status
+- Commit information
+
+For large repositories with Git LFS, the theme uses a lightweight git command to avoid performance issues.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Theme not updating">
+    **Problem**: Changes to theme variables don't take effect
+
+    **Solution**: Reload your shell configuration:
+    ```bash
+    source ~/.zshrc  # or ~/.bashrc
+    ```
+
+    Or open a new terminal window.
+  </Accordion>
+
+  <Accordion title="Colors look wrong">
+    **Problem**: Theme colors don't match your terminal background
+
+    **Solution**: Switch the theme mode:
+    ```bash
+    # For dark backgrounds
+    export CODELY_THEME_MODE="dark"
+
+    # For light backgrounds
+    export CODELY_THEME_MODE="light"
+    ```
+  </Accordion>
+
+  <Accordion title="Icons not displaying correctly">
+    **Problem**: Status icons show as boxes or question marks
+
+    **Solution**: Your terminal font may not support Unicode. Either:
+    1. Install a font with better Unicode support (e.g., JetBrains Mono, Fira Code)
+    2. Use ASCII characters:
+    ```bash
+    export CODELY_THEME_STATUS_ICON_OK=">"
+    export CODELY_THEME_STATUS_ICON_KO="X"
+    ```
+  </Accordion>
+
+  <Accordion title="Prompt is too slow">
+    **Problem**: Prompt takes time to appear after commands
+
+    **Solution**: Use minimal mode to reduce git status checks:
+    ```bash
+    export CODELY_THEME_MINIMAL=true
+    ```
+
+    Or switch to short pwd mode:
+    ```bash
+    export CODELY_THEME_PWD_MODE="short"
+    ```
+  </Accordion>
+
+  <Accordion title="Git info not showing">
+    **Problem**: Git branch/status doesn't appear in prompt
+
+    **Solution**: Make sure you're in a git repository and minimal mode is off:
+    ```bash
+    export CODELY_THEME_MINIMAL=false
+    ```
+
+    For very large repos, the theme may skip git info for performance.
+  </Accordion>
+</AccordionGroup>
+
+## Quick Reference
+
+### All Theme Variables
+
+| Variable | Values | Default | Description |
+|----------|--------|---------|-------------|
+| `CODELY_THEME_MINIMAL` | `true`, `false` | `false` | Show only status icon |
+| `CODELY_THEME_MODE` | `dark`, `light` | `dark` | Color scheme |
+| `CODELY_THEME_PROMPT_IN_NEW_LINE` | `true`, `false` | `false` | Multi-line prompt |
+| `CODELY_THEME_PWD_MODE` | `short`, `full`, `home_relative` | `short` | Directory display mode |
+| `CODELY_THEME_STATUS_ICON_OK` | Any character | `▸` | Success icon |
+| `CODELY_THEME_STATUS_ICON_KO` | Any character | `▪` | Failure icon |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Shell Customization" icon="terminal" href="/configuration/shell-customization">
+    Learn about aliases, functions, and exports
+  </Card>
+
+  <Card title="Version Config Files" icon="code-branch" href="/configuration/versioning-configs">
+    Start versioning your application configs
+  </Card>
+</CardGroup>

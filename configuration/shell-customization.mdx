@@ -1,0 +1,555 @@
+---
+title: Shell Customization
+description: Customize your shell environment with aliases, exports, functions, and initialization scripts
+---
+
+## Shell Files Overview
+
+Dotly provides a structured way to customize your shell through four main files in `$DOTFILES_PATH/shell/`:
+
+<CardGroup cols={2}>
+  <Card title="aliases.sh" icon="link-simple">
+    Short command shortcuts and replacements
+  </Card>
+
+  <Card title="exports.sh" icon="file-export">
+    Environment variables and PATH configuration
+  </Card>
+
+  <Card title="functions.sh" icon="function">
+    Custom shell functions for complex operations
+  </Card>
+
+  <Card title="init.sh" icon="play">
+    Initialization script that loads all other files
+  </Card>
+</CardGroup>
+
+<Note>
+  All four files are automatically loaded when you start a new shell session. Changes take effect immediately in new terminals, or run `source ~/.zshrc` (or `~/.bashrc`) to reload.
+</Note>
+
+## How It Works
+
+The `init.sh` file loads all your customizations:
+
+```bash shell/init.sh
+# This is a useful file to have the same aliases/functions in bash and zsh
+
+source "$DOTFILES_PATH/shell/aliases.sh"
+source "$DOTFILES_PATH/shell/exports.sh"
+source "$DOTFILES_PATH/shell/functions.sh"
+```
+
+This file is sourced by both `.bashrc` and `.zshrc`, ensuring your customizations work in both shells.
+
+## Aliases
+
+### What Are Aliases?
+
+Aliases are short command shortcuts that expand to longer commands. They save typing and help you remember complex command options.
+
+### Default Aliases
+
+Dotly includes these aliases by default in `shell/aliases.sh`:
+
+```bash shell/aliases.sh
+# Enable aliases to be sudo'ed
+alias sudo='sudo '
+
+# Navigation
+alias ..="cd .."
+alias ...="cd ../.."
+alias ll="ls -l"
+alias la="ls -la"
+alias ~="cd ~"
+alias dotfiles='cd $DOTFILES_PATH'
+
+# Git aliases
+alias gaa="git add -A"
+alias gc='$DOTLY_PATH/bin/dot git commit'
+alias gca="git add --all && git commit --amend --no-edit"
+alias gco="git checkout"
+alias gd='$DOTLY_PATH/bin/dot git pretty-diff'
+alias gs="git status -sb"
+alias gf="git fetch --all -p"
+alias gps="git push"
+alias gpsf="git push --force"
+alias gpl="git pull --rebase --autostash"
+alias gb="git branch"
+alias gl='$DOTLY_PATH/bin/dot git pretty-log'
+
+# Utility aliases
+alias k='kill -9'
+alias i.='(idea $PWD &>/dev/null &)'
+alias c.='(code $PWD &>/dev/null &)'
+alias o.='open .'
+alias up='dot package update_all'
+```
+
+### Adding Custom Aliases
+
+<Steps>
+  <Step title="Open the aliases file">
+    ```bash
+    code $DOTFILES_PATH/shell/aliases.sh
+    # or
+    vim $DOTFILES_PATH/shell/aliases.sh
+    ```
+  </Step>
+
+  <Step title="Add your aliases">
+    Add new aliases at the end of the file:
+
+    ```bash
+    # Docker shortcuts
+    alias dps="docker ps"
+    alias dimg="docker images"
+    alias dex="docker exec -it"
+    alias dlog="docker logs -f"
+
+    # Kubernetes shortcuts
+    alias k="kubectl"
+    alias kgp="kubectl get pods"
+    alias kgs="kubectl get services"
+    alias kgd="kubectl get deployments"
+
+    # Common typos
+    alias gti="git"
+    alias gut="git"
+
+    # Quick edits
+    alias zshrc="vim ~/.zshrc"
+    alias vimrc="vim ~/.vimrc"
+    ```
+  </Step>
+
+  <Step title="Reload your shell">
+    ```bash
+    source ~/.zshrc  # for zsh
+    # or
+    source ~/.bashrc  # for bash
+    ```
+  </Step>
+
+  <Step title="Test and commit">
+    ```bash
+    # Test your new alias
+    dps
+
+    # Commit when it works
+    cd $DOTFILES_PATH
+    git add shell/aliases.sh
+    git commit -m "Add docker and kubernetes aliases"
+    git push
+    ```
+  </Step>
+</Steps>
+
+### Alias Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Keep them short" icon="text-size">
+    Aliases should be quick to type. Use 2-4 characters for frequently used commands.
+  </Card>
+
+  <Card title="Make them memorable" icon="brain">
+    Use logical abbreviations: `gco` for git checkout, `dps` for docker ps.
+  </Card>
+
+  <Card title="Avoid conflicts" icon="triangle-exclamation">
+    Don't override important system commands unless you know what you're doing.
+  </Card>
+
+  <Card title="Group related aliases" icon="layer-group">
+    Keep git aliases together, docker aliases together, etc. for easier maintenance.
+  </Card>
+</CardGroup>
+
+## Environment Variables (Exports)
+
+### What Are Exports?
+
+Exports define environment variables that are available to all programs you run. They configure application behavior and define your PATH.
+
+### Default Exports
+
+Here's the default `shell/exports.sh` configuration:
+
+```bash shell/exports.sh
+# ------------------------------------------------------------------------------
+# Codely theme config
+# ------------------------------------------------------------------------------
+export CODELY_THEME_MINIMAL=false
+export CODELY_THEME_MODE="dark"
+export CODELY_THEME_PROMPT_IN_NEW_LINE=false
+export CODELY_THEME_PWD_MODE="short" # full, short, home_relative
+
+# ------------------------------------------------------------------------------
+# Languages
+# ------------------------------------------------------------------------------
+export JAVA_HOME='/Library/Java/JavaVirtualMachines/amazon-corretto-15.jdk/Contents/Home'
+export GEM_HOME="$HOME/.gem"
+export GOPATH="$HOME/.go"
+
+# ------------------------------------------------------------------------------
+# Apps
+# ------------------------------------------------------------------------------
+if [ "$CODELY_THEME_MODE" = "dark" ]; then
+	fzf_colors="pointer:#ebdbb2,bg+:#3c3836,fg:#ebdbb2,fg+:#fbf1c7,hl:#8ec07c,info:#928374,header:#fb4934"
+else
+	fzf_colors="pointer:#db0f35,bg+:#d6d6d6,fg:#808080,fg+:#363636,hl:#8ec07c,info:#928374,header:#fffee3"
+fi
+
+export FZF_DEFAULT_OPTS="--color=$fzf_colors --reverse"
+
+# ------------------------------------------------------------------------------
+# Path - The higher it is, the more priority it has
+# ------------------------------------------------------------------------------
+path=(
+	"$HOME/bin"
+	"$DOTLY_PATH/bin"
+	"$DOTFILES_PATH/bin"
+	"$JAVA_HOME/bin"
+	"$GEM_HOME/bin"
+	"$GOPATH/bin"
+	"$HOME/.cargo/bin"
+	"/usr/local/opt/ruby/bin"
+	"/usr/local/opt/python/libexec/bin"
+	"/opt/homebrew/bin"
+	"/usr/local/bin"
+	"/usr/local/sbin"
+	"/bin"
+	"/usr/bin"
+	"/usr/sbin"
+	"/sbin"
+	"$path"
+)
+
+export path
+```
+
+### Adding Custom Environment Variables
+
+<Accordion title="Language-specific paths">
+  ```bash
+  # Node.js
+  export NVM_DIR="$HOME/.nvm"
+  export NODE_OPTIONS="--max-old-space-size=4096"
+
+  # Python
+  export PYTHONPATH="$HOME/python/lib"
+  export PIPENV_VENV_IN_PROJECT=1
+
+  # Rust
+  export RUSTUP_HOME="$HOME/.rustup"
+  export CARGO_HOME="$HOME/.cargo"
+  ```
+</Accordion>
+
+<Accordion title="Application configuration">
+  ```bash
+  # Editor preferences
+  export EDITOR="vim"
+  export VISUAL="code"
+
+  # Database connections
+  export DATABASE_URL="postgresql://localhost/mydb"
+  export REDIS_URL="redis://localhost:6379"
+
+  # API configuration
+  export API_TIMEOUT=30
+  export API_RETRIES=3
+  ```
+</Accordion>
+
+<Accordion title="Custom PATH additions">
+  ```bash
+  # Add custom bin directories to PATH
+  path=(
+    "$HOME/scripts"           # Your custom scripts
+    "$HOME/.local/bin"        # Local binaries
+    "$HOME/.composer/vendor/bin"  # PHP Composer
+    "$path"                   # Keep existing PATH
+  )
+  export path
+  ```
+</Accordion>
+
+<Accordion title="Development tools">
+  ```bash
+  # Docker
+  export DOCKER_BUILDKIT=1
+  export COMPOSE_DOCKER_CLI_BUILD=1
+
+  # AWS
+  export AWS_PROFILE="dev"
+  export AWS_REGION="us-east-1"
+
+  # Go
+  export GO111MODULE=on
+  export GOPATH="$HOME/go"
+  ```
+</Accordion>
+
+<Warning>
+  **Never commit secrets!** Don't add API keys, passwords, or tokens to `exports.sh`. Instead:
+  1. Create a separate `shell/secrets.sh` file
+  2. Add it to `.gitignore`
+  3. Source it from `init.sh`: `source "$DOTFILES_PATH/shell/secrets.sh"`
+</Warning>
+
+## Custom Functions
+
+### What Are Functions?
+
+Functions are reusable shell scripts that can accept arguments and perform complex operations. They're more powerful than aliases.
+
+### Default Functions
+
+Dotly includes these helpful functions in `shell/functions.sh`:
+
+```bash shell/functions.sh
+function cdd() {
+	cd "$(ls -d -- */ | fzf)" || echo "Invalid directory"
+}
+
+function j() {
+	fname=$(declare -f -F _z)
+
+	[ -n "$fname" ] || source "$DOTLY_PATH/modules/z/z.sh"
+
+	_z "$1"
+}
+
+function recent_dirs() {
+	# This script depends on pushd. It works better with autopush enabled in ZSH
+	escaped_home=$(echo $HOME | sed 's/\//\\\//g')
+	selected=$(dirs -p | sort -u | fzf)
+
+	cd "$(echo "$selected" | sed "s/\~/$escaped_home/")" || echo "Invalid directory"
+}
+```
+
+<Accordion title="Understanding the default functions">
+  **`cdd`** - Change directory using fuzzy finder:
+  - Lists all subdirectories in current folder
+  - Uses `fzf` to let you search and select
+  - Changes to the selected directory
+
+  **`j`** - Jump to frequently used directories:
+  - Uses the `z` module to track directory usage
+  - Jump to directories by partial name match
+  - Example: `j proj` jumps to `~/projects`
+
+  **`recent_dirs`** - Navigate to recently visited directories:
+  - Shows your directory history
+  - Uses `fzf` for fuzzy searching
+  - Requires pushd/autopush for tracking
+</Accordion>
+
+### Creating Custom Functions
+
+<Steps>
+  <Step title="Open functions.sh">
+    ```bash
+    code $DOTFILES_PATH/shell/functions.sh
+    ```
+  </Step>
+
+  <Step title="Add your function">
+    ```bash
+    # Create a new git branch and switch to it
+    function gnb() {
+      if [ -z "$1" ]; then
+        echo "Usage: gnb <branch-name>"
+        return 1
+      fi
+      git checkout -b "$1"
+    }
+
+    # Extract any archive file
+    function extract() {
+      if [ -f "$1" ]; then
+        case "$1" in
+          *.tar.bz2)   tar xjf "$1"     ;;
+          *.tar.gz)    tar xzf "$1"     ;;
+          *.bz2)       bunzip2 "$1"     ;;
+          *.rar)       unrar x "$1"     ;;
+          *.gz)        gunzip "$1"      ;;
+          *.tar)       tar xf "$1"      ;;
+          *.tbz2)      tar xjf "$1"     ;;
+          *.tgz)       tar xzf "$1"     ;;
+          *.zip)       unzip "$1"       ;;
+          *.Z)         uncompress "$1"  ;;
+          *.7z)        7z x "$1"        ;;
+          *)           echo "'$1' cannot be extracted" ;;
+        esac
+      else
+        echo "'$1' is not a valid file"
+      fi
+    }
+
+    # Create directory and cd into it
+    function mkcd() {
+      mkdir -p "$1" && cd "$1"
+    }
+
+    # Find and kill process by name
+    function killport() {
+      lsof -ti:$1 | xargs kill -9
+    }
+    ```
+  </Step>
+
+  <Step title="Reload and test">
+    ```bash
+    source ~/.zshrc
+    
+    # Test your functions
+    mkcd test-dir
+    extract archive.tar.gz
+    gnb feature/new-feature
+    ```
+  </Step>
+</Steps>
+
+### Function Examples by Use Case
+
+<AccordionGroup>
+  <Accordion title="Git workflow functions">
+    ```bash
+    # Commit all changes with a message
+    function gcm() {
+      git add -A && git commit -m "$1"
+    }
+
+    # Create PR from current branch
+    function gpr() {
+      git push -u origin $(git branch --show-current)
+      gh pr create
+    }
+
+    # Delete merged branches
+    function gclean() {
+      git branch --merged | grep -v "\*\|main\|master" | xargs -n 1 git branch -d
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Docker helpers">
+    ```bash
+    # Stop and remove all containers
+    function dclean() {
+      docker stop $(docker ps -aq)
+      docker rm $(docker ps -aq)
+    }
+
+    # Enter a running container
+    function denter() {
+      docker exec -it $1 /bin/bash
+    }
+
+    # Build and run docker-compose
+    function dup() {
+      docker-compose up --build -d
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Development shortcuts">
+    ```bash
+    # Start a local web server
+    function serve() {
+      local port="${1:-8000}"
+      python3 -m http.server $port
+    }
+
+    # Find in files
+    function findfile() {
+      find . -name "*$1*"
+    }
+
+    # Count lines of code
+    function loc() {
+      find . -name "*.$1" | xargs wc -l
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="System utilities">
+    ```bash
+    # Get external IP address
+    function myip() {
+      curl -s https://api.ipify.org
+    }
+
+    # Get weather
+    function weather() {
+      curl -s "wttr.in/${1:-}"
+    }
+
+    # Create backup of file
+    function backup() {
+      cp "$1" "$1.backup-$(date +%Y%m%d-%H%M%S)"
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Quick Reference
+
+### When to Use What
+
+<CardGroup cols={3}>
+  <Card title="Aliases" icon="link-simple">
+    - Simple command shortcuts
+    - No logic needed
+    - No parameters required
+    - Example: `alias la="ls -la"`
+  </Card>
+
+  <Card title="Functions" icon="function">
+    - Complex operations
+    - Accept parameters
+    - Conditional logic
+    - Example: `function mkcd()`
+  </Card>
+
+  <Card title="Exports" icon="file-export">
+    - Configuration values
+    - Environment variables
+    - PATH modifications
+    - Example: `export EDITOR="vim"`
+  </Card>
+</CardGroup>
+
+### File Locations Quick Reference
+
+```bash
+$DOTFILES_PATH/shell/
+├── aliases.sh       # Command shortcuts
+├── exports.sh       # Environment variables
+├── functions.sh     # Shell functions
+├── init.sh          # Loads all the above
+├── .inputrc         # Readline configuration
+├── bash/
+│   ├── .bash_profile
+│   └── .bashrc
+└── zsh/
+    ├── .zshrc
+    ├── .zshenv
+    └── .zimrc
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Theme Customization" icon="palette" href="/configuration/theme">
+    Customize the CODELY theme appearance
+  </Card>
+
+  <Card title="Version Config Files" icon="code-branch" href="/configuration/versioning-configs">
+    Learn how to version application configs
+  </Card>
+</CardGroup>

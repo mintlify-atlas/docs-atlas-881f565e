@@ -1,0 +1,520 @@
+---
+title: Managing Packages
+description: Dump, import, and update packages across machines with dotly
+---
+
+## Overview
+
+dotly provides powerful commands to manage your installed packages across different machines. You can dump your current packages to files, commit them to your dotfiles repository, and import them on new machines.
+
+<Note>
+  Package management in dotly is designed for cross-machine synchronization. Dump packages on your main machine, commit to git, and import on new machines.
+</Note>
+
+## Dumping Packages
+
+The `dot package dump` command exports all installed packages from various package managers to text files in your dotfiles:
+
+```bash
+dot package dump
+```
+
+### What Gets Dumped
+
+<CodeGroup>
+```bash dump script
+# Brew packages (macOS/Linux)
+platform::command_exists brew && package::brew_dump && \
+  output::answer "Brew apps dumped on $HOMEBREW_DUMP_FILE_PATH"
+
+# APT packages (Debian/Ubuntu)
+platform::command_exists apt-mark && package::apt_dump && \
+  output::answer "Apt apps dumped on $APT_DUMP_FILE_PATH"
+
+# Snap packages (Linux)
+platform::command_exists snap && package::snap_dump && \
+  output::answer "Snap apps dumped on $SNAP_DUMP_FILE_PATH"
+
+# Python packages
+platform::command_exists pip3 && package::python_dump && \
+  output::answer "Python apps dumped on $PYTHON_DUMP_FILE_PATH"
+
+# VS Code extensions
+platform::command_exists code && package::code_dump && \
+  output::answer "VSCode extensions dumped on $CODE_DUMP_FILE_PATH"
+
+# Node.js packages (Volta or NPM)
+if platform::command_exists volta; then
+  package::volta_dump && output::answer "Volta apps dumped on $VOLTA_DUMP_FILE_PATH"
+elif platform::command_exists npm; then
+  package::npm_dump && output::answer "NPM apps dumped on $NPM_DUMP_FILE_PATH"
+fi
+
+# Windows packages (WSL)
+platform::command_exists winget.exe && package::winget_dump && \
+  output::answer "Windows apps dumped on $WINGET_DUMP_FILE_PATH"
+```
+
+```bash Example output
+$ dot package dump
+
+Brew apps dumped on /Users/john/.dotfiles/os/mac/brew/Brewfile
+Python apps dumped on /Users/john/.dotfiles/langs/python/requirements.txt
+VSCode extensions dumped on /Users/john/.dotfiles/editors/code/extensions.txt
+Volta apps dumped on /Users/john/.dotfiles/langs/js/volta_dependencies.txt
+All packages dumped
+```
+</CodeGroup>
+
+### Dump File Locations
+
+Packages are dumped to specific locations in your dotfiles:
+
+<Accordion title="Platform-specific packages">
+  ```bash
+  # macOS
+  os/mac/brew/Brewfile
+  
+  # Linux
+  os/linux/brew/Brewfile
+  os/linux/apt/packages.txt
+  os/linux/snap/packages.txt
+  os/linux/pacman/packages.txt
+  
+  # Windows (WSL)
+  os/windows/winget.output
+  ```
+</Accordion>
+
+<Accordion title="Language packages">
+  ```bash
+  # JavaScript/Node.js
+  langs/js/global_modules.txt     # NPM global packages
+  langs/js/volta_dependencies.txt # Volta packages
+  
+  # Python
+  langs/python/requirements.txt
+  ```
+</Accordion>
+
+<Accordion title="Editor extensions">
+  ```bash
+  # VS Code
+  editors/code/extensions.txt
+  ```
+</Accordion>
+
+### Dump Implementation Examples
+
+<CodeGroup>
+```bash Homebrew dump
+package::brew_dump() {
+  if platform::is_macos; then
+    mkdir -p "$DOTFILES_PATH/os/mac/brew"
+  else
+    mkdir -p "$DOTFILES_PATH/os/linux/brew"
+  fi
+  
+  brew bundle dump --file="$HOMEBREW_DUMP_FILE_PATH" --force
+  brew bundle --file="$HOMEBREW_DUMP_FILE_PATH" --force cleanup
+}
+```
+
+```bash APT dump
+package::apt_dump() {
+  mkdir -p "$DOTFILES_PATH/os/linux/apt"
+  apt-mark showmanual >"$APT_DUMP_FILE_PATH"
+}
+```
+
+```bash VS Code dump
+package::code_dump() {
+  mkdir -p "$DOTFILES_PATH/editors/code"
+  code --list-extensions >"$CODE_DUMP_FILE_PATH"
+}
+```
+
+```bash Python dump
+package::python_dump() {
+  mkdir -p "$DOTFILES_PATH/langs/python"
+  pip3 freeze >"$PYTHON_DUMP_FILE_PATH"
+}
+```
+</CodeGroup>
+
+## Importing Packages
+
+The `dot package import` command installs all packages from your dumped files:
+
+```bash
+dot package import
+```
+
+<Warning>
+  This can take a while depending on how many packages you have. The command will install packages from all available dump files.
+</Warning>
+
+### Import Process
+
+<Steps>
+  <Step title="Welcome message">
+    ```bash
+    🎩 Let's import your packages (this could take a while)
+    ```
+  </Step>
+  
+  <Step title="Import each package manager">
+    dotly imports packages from each available dump file in sequence:
+    
+    ```bash
+    Importing Brew apps from /Users/john/.dotfiles/os/mac/brew/Brewfile
+    Importing Python apps from /Users/john/.dotfiles/langs/python/requirements.txt
+    Importing VSCode extensions from /Users/john/.dotfiles/editors/code/extensions.txt
+    ```
+  </Step>
+  
+  <Step title="Completion">
+    ```bash
+    All packages imported
+    ```
+  </Step>
+</Steps>
+
+### Import Implementation Examples
+
+<CodeGroup>
+```bash Homebrew import
+package::brew_import() {
+  if [ -f "$HOMEBREW_DUMP_FILE_PATH" ]; then
+    brew bundle install --file="$HOMEBREW_DUMP_FILE_PATH"
+  fi
+}
+```
+
+```bash APT import
+package::apt_import() {
+  if [ -f "$APT_DUMP_FILE_PATH" ]; then
+    xargs sudo apt-get install -y <"$APT_DUMP_FILE_PATH"
+  fi
+}
+```
+
+```bash VS Code import
+package::code_import() {
+  mkdir -p "$DOTFILES_PATH/editors/code"
+  xargs -I_ code --install-extension _ --force <"$CODE_DUMP_FILE_PATH"
+}
+```
+
+```bash Python import
+package::python_import() {
+  if [ -f "$PYTHON_DUMP_FILE_PATH" ]; then
+    pip3 install -r "$PYTHON_DUMP_FILE_PATH"
+  fi
+}
+```
+</CodeGroup>
+
+## Updating All Packages
+
+The `dot package update_all` command updates packages across all package managers:
+
+```bash
+dot package update_all
+```
+
+Or use the convenient alias:
+
+```bash
+up
+```
+
+### Update Output
+
+<CodeGroup>
+```bash Update process
+♻️  Updating all the apps on your system
+
+If you want to debug what's happening behind the scenes, you can execute `dot self debug` in parallel.
+
+🍎 App Store
+Updating apps...
+
+🍺 Brew
+Updating brew...
+
+🐍 pip
+Upgrading pip packages...
+
+🐘 Composer
+Updating composer packages...
+
+♦️  gem
+Updating gems...
+
+🌈 npm
+Updating npm packages...
+
+📦 cargo
+Updating cargo packages...
+
+📜 tldr database
+Database updated
+
+👽 Zim Framework
+Done
+
+🌚 dotly
+Done
+
+👌 All your packages have been successfully updated
+```
+
+```bash update_all script
+platform::command_exists mas && output::h2 '🍎 App Store' && mas::update_all
+platform::command_exists brew && output::h2 '🍺 Brew' && brew::update_all
+platform::command_exists pip3 && output::h2 '🐍 pip' && pip::update_all
+platform::command_exists composer && output::h2 '🐘 Composer' && composer::update_all
+platform::command_exists gem && output::h2 '♦️  gem' && gem::update_all
+platform::command_exists npm && output::h2 '🌈 npm' && npm::update_all
+platform::command_exists cargo && output::h2 '📦 cargo' && cargo::update_all
+
+platform::command_exists tldr && output::h2 '📜 tldr database' && \
+  tldr --update >/dev/null 2>&1 && output::answer "Database updated"
+
+output::h2 "👽 Zim Framework" && zsh "$ZIM_HOME/zimfw.zsh" upgrade && \
+  zsh "$ZIM_HOME/zimfw.zsh" update && output::answer "Done"
+
+output::h2 "🌚 dotly" && dot self update >/dev/null 2>&1 && output::answer "Done"
+```
+</CodeGroup>
+
+<Tip>
+  The `update_all` command also updates your shell framework (Zim) and dotly itself, keeping your entire development environment current.
+</Tip>
+
+## Cross-Machine Synchronization Workflow
+
+Here's the recommended workflow for keeping packages synchronized across machines:
+
+<Steps>
+  <Step title="Initial setup on main machine">
+    Install packages as you normally would:
+    
+    ```bash
+    dot package add ripgrep
+    dot package add jq
+    dot package add bat
+    code --install-extension github.copilot
+    ```
+  </Step>
+  
+  <Step title="Dump packages">
+    Export all installed packages:
+    
+    ```bash
+    dot package dump
+    ```
+    
+    This creates/updates files like:
+    - `os/mac/brew/Brewfile`
+    - `editors/code/extensions.txt`
+    - `langs/python/requirements.txt`
+  </Step>
+  
+  <Step title="Commit to git">
+    Commit the dump files to your dotfiles repository:
+    
+    ```bash
+    cd $DOTFILES_PATH
+    git add os/ editors/ langs/
+    git commit -m "Update package dumps"
+    git push
+    ```
+  </Step>
+  
+  <Step title="Import on new machine">
+    On your new machine, after setting up dotly:
+    
+    ```bash
+    cd $DOTFILES_PATH
+    git pull
+    dot package import
+    ```
+    
+    All your packages will be installed automatically.
+  </Step>
+  
+  <Step title="Keep machines in sync">
+    Periodically dump and commit on any machine where you install new packages:
+    
+    ```bash
+    dot package dump
+    cd $DOTFILES_PATH && git add -A && git commit -m "Update packages" && git push
+    ```
+    
+    Then pull and import on other machines:
+    
+    ```bash
+    cd $DOTFILES_PATH && git pull
+    dot package import
+    ```
+  </Step>
+</Steps>
+
+## Restoration Scripts
+
+For automated setup, you can create restoration scripts in `restoration_scripts/`:
+
+```bash restoration_scripts/packages.sh
+#!/usr/bin/env bash
+
+# Import all previously dumped packages
+dot package import
+
+# Install additional packages not in dumps
+dot package add fzf
+dot package add gh
+dot package add docker
+
+# Install language-specific tools
+dot package add volta
+volta install node@18
+
+echo "✅ All packages installed"
+```
+
+This script runs automatically when you restore your dotfiles on a new machine.
+
+## Package Manager-Specific Features
+
+### Homebrew Bundle
+
+Homebrew uses a special `Brewfile` format that includes:
+
+```ruby Brewfile example
+# Taps
+tap "homebrew/bundle"
+tap "homebrew/cask"
+
+# CLI tools
+brew "git"
+brew "jq"
+brew "ripgrep"
+brew "fzf"
+
+# GUI applications (casks)
+cask "visual-studio-code"
+cask "docker"
+cask "iterm2"
+
+# Mac App Store apps
+mas "Xcode", id: 497799835
+```
+
+### APT Packages
+
+APT dumps only manually installed packages (not dependencies):
+
+```bash packages.txt example
+git
+curl
+wget
+build-essential
+python3-pip
+ripgrep
+bat
+```
+
+### VS Code Extensions
+
+Extensions are dumped by ID:
+
+```txt extensions.txt example
+dbaeumer.vscode-eslint
+esbenp.prettier-vscode
+github.copilot
+ms-python.python
+rust-lang.rust-analyzer
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Dump regularly" icon="floppy-disk">
+    Run `dot package dump` after installing new packages:
+    ```bash
+    dot package add ripgrep && dot package dump
+    ```
+  </Card>
+  
+  <Card title="Commit dumps to git" icon="code-branch">
+    Keep your package dumps versioned:
+    ```bash
+    cd $DOTFILES_PATH
+    git add os/ editors/ langs/
+    git commit -m "Update packages"
+    ```
+  </Card>
+  
+  <Card title="Review before importing" icon="eye">
+    Check dump files before importing on new machines to avoid unwanted packages.
+  </Card>
+  
+  <Card title="Use update_all regularly" icon="arrows-rotate">
+    Keep packages updated with the `up` alias:
+    ```bash
+    up  # Updates everything
+    ```
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Import fails for some packages">
+    Some packages may not be available on all platforms. Check the error messages and install manually if needed:
+    
+    ```bash
+    dot package import 2>&1 | tee import.log
+    # Review import.log for failures
+    ```
+  </Accordion>
+  
+  <Accordion title="Dump creates huge files">
+    This is normal for language package managers like pip or npm. Consider using virtual environments for project-specific packages:
+    
+    ```bash
+    # Only dump global packages
+    pip3 freeze --user > requirements.txt
+    ```
+  </Accordion>
+  
+  <Accordion title="Different package names on different platforms">
+    Some packages have different names across package managers. You may need to manually edit dump files or create recipes for platform-specific handling.
+  </Accordion>
+  
+  <Accordion title="Debug update_all issues">
+    Run with debug output in a separate terminal:
+    
+    ```bash
+    # Terminal 1
+    dot self debug
+    
+    # Terminal 2
+    dot package update_all
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Package Overview" icon="box" href="/packages/overview">
+    Learn about package manager abstraction
+  </Card>
+  
+  <Card title="Installing Packages" icon="download" href="/packages/installing">
+    Install packages with `dot package add`
+  </Card>
+</CardGroup>

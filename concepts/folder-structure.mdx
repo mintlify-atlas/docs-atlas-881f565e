@@ -1,0 +1,510 @@
+---
+title: Folder Structure
+description: Complete guide to organizing your dotfiles - directory layout, purpose of each folder, and real-world examples
+---
+
+## Overview
+
+dotly provides an opinionated folder structure that helps you organize all your development environment configurations in a logical, maintainable way.
+
+```bash
+~/.dotfiles/
+├── bin/                    # Custom binaries and symlinks
+├── doc/                    # Documentation for your dotfiles
+├── editors/                # Editor configurations (VS Code, Vim, etc.)
+├── git/                    # Git configuration
+├── langs/                  # Programming language configs
+├── os/                     # OS-specific configurations
+├── restoration_scripts/    # Scripts that run during installation
+├── scripts/                # Custom executable scripts
+├── shell/                  # Shell configuration (zsh, bash)
+├── symlinks/               # Symlink configuration files
+└── modules/                # Git submodules (dotly framework)
+    └── dotly/              # The dotly framework itself
+```
+
+<Info>
+  This structure is created automatically when you run `dot dotfiles create` or during initial installation.
+</Info>
+
+## Directory Reference
+
+### bin/
+
+Custom binaries and executable symlinks that should be available system-wide.
+
+<Accordion title="Why use bin/?">
+  The `bin/` directory is added to your PATH with high priority, making any executables here available from anywhere in your terminal. This is perfect for:
+  
+  - Custom scripts you use frequently
+  - Symlinks to executables from other tools
+  - Wrapper scripts that modify tool behavior
+</Accordion>
+
+**Example use cases:**
+
+```bash
+# Create a custom script
+touch $DOTFILES_PATH/bin/mycommand
+chmod +x $DOTFILES_PATH/bin/mycommand
+
+# Now available everywhere:
+mycommand
+```
+
+**PATH configuration:**
+
+```bash
+# From shell/exports.sh
+path=(
+  "$HOME/bin"              # Personal bin (highest priority)
+  "$DOTLY_PATH/bin"       # dotly commands
+  "$DOTFILES_PATH/bin"    # Your custom binaries ← This directory
+  # ... other paths
+)
+```
+
+### doc/
+
+Documentation for your dotfiles setup.
+
+**What to put here:**
+- Setup instructions specific to your configuration
+- Notes about custom scripts
+- Troubleshooting guides
+- Onboarding documentation for your team
+
+**Example:**
+
+```bash
+$DOTFILES_PATH/doc/
+├── setup.md
+├── custom-scripts.md
+└── troubleshooting.md
+```
+
+### editors/
+
+Configuration files for your code editors and IDEs.
+
+**Common structure:**
+
+```bash
+editors/
+├── code/                   # VS Code
+│   ├── settings.json
+│   ├── keybindings.json
+│   └── snippets/
+├── intellij/               # IntelliJ IDEA
+│   └── settings.jar
+├── vim/                    # Vim/Neovim
+│   ├── .vimrc
+│   └── plugins.vim
+└── sublime/                # Sublime Text
+    └── Preferences.sublime-settings
+```
+
+**Symlinking editor configs:**
+
+Add to `symlinks/conf.yaml` (or OS-specific variant):
+
+```yaml
+# VS Code on macOS
+~/Library/Application Support/Code/User/settings.json: editors/code/settings.json
+~/Library/Application Support/Code/User/keybindings.json: editors/code/keybindings.json
+
+# VS Code on Linux
+~/.config/Code/User/settings.json: editors/code/settings.json
+```
+
+<Tip>
+  Use OS-specific symlink files (`conf.macos.yaml`, `conf.linux.yaml`) for editor configs that have different paths on different operating systems.
+</Tip>
+
+### git/
+
+Git configuration files.
+
+**Typical contents:**
+
+```bash
+git/
+├── .gitconfig              # Main git config
+├── .gitignore_global       # Global gitignore patterns
+└── .gitmessage             # Commit message template
+```
+
+**Example `.gitconfig`:**
+
+```ini
+[user]
+  name = Your Name
+  email = your.email@example.com
+
+[core]
+  excludesfile = ~/.gitignore_global
+
+[alias]
+  st = status
+  co = checkout
+  br = branch
+```
+
+**Symlink setup:**
+
+```yaml
+# In symlinks/conf.yaml
+~/.gitconfig: git/.gitconfig
+~/.gitignore_global: git/.gitignore_global
+```
+
+### langs/
+
+Programming language and runtime configurations.
+
+**Example structure:**
+
+```bash
+langs/
+├── go/
+│   └── env.sh              # Go environment variables
+├── java/
+│   └── env.sh              # JAVA_HOME and classpath
+├── js/
+│   ├── .npmrc              # npm configuration
+│   └── .yarnrc             # Yarn configuration
+├── php/
+│   └── composer/
+├── python/
+│   ├── .pylintrc
+│   └── requirements.txt
+└── ruby/
+    ├── .gemrc
+    └── .irbrc
+```
+
+**Auto-loading language configs:**
+
+Shell files in `langs/` are typically sourced in your shell configuration:
+
+```bash
+# These get loaded automatically if present
+$DOTFILES_PATH/langs/go/env.sh
+$DOTFILES_PATH/langs/java/env.sh
+```
+
+### os/
+
+Operating system-specific configurations and application settings.
+
+**Example structure:**
+
+```bash
+os/
+├── macos/
+│   ├── defaults/           # macOS defaults (System Preferences)
+│   ├── apps/
+│   │   ├── iterm.plist
+│   │   └── rectangle.plist
+│   └── brew/
+│       └── Brewfile
+└── linux/
+    ├── apt/
+    └── systemd/
+```
+
+**macOS defaults example:**
+
+```bash
+# Save to os/macos/defaults/dock.sh
+# Set dock icon size
+defaults write com.apple.dock tilesize -int 36
+
+# Auto-hide dock
+defaults write com.apple.dock autohide -bool true
+
+# Restart dock
+killall Dock
+```
+
+Run with: `dot mac defaults import`
+
+### restoration_scripts/
+
+Executable scripts that run during `dot self install`.
+
+<Note>
+  These scripts are executed in alphabetical order during installation, allowing you to set up your environment automatically.
+</Note>
+
+**Example scripts:**
+
+```bash
+restoration_scripts/
+├── 01_install_packages.sh
+├── 02_setup_languages.sh
+├── 03_clone_repos.sh
+└── 99_final_setup.sh
+```
+
+**Example restoration script:**
+
+```bash
+#!/usr/bin/env bash
+# restoration_scripts/01_install_packages.sh
+
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+output::answer "Installing custom packages..."
+
+if platform::is_macos; then
+  brew install jq ripgrep fd bat
+elif platform::is_linux; then
+  sudo apt-get install -y jq ripgrep fd-find bat
+fi
+
+output::answer "Packages installed!"
+```
+
+**Execution during installation:**
+
+```bash
+# From scripts/self/install (lines 43-53)
+install_scripts_path="$DOTFILES_PATH/restoration_scripts"
+find "$install_scripts_path" -mindepth 1 -maxdepth 1 -type l,f -name '*.sh' |
+  sort |
+  while read -r install_script; do
+    [[ -x $install_script ]] && . "$install_script"
+  done
+```
+
+### scripts/
+
+Custom executable scripts organized by context.
+
+**Default contexts:**
+
+```bash
+scripts/
+├── git/                    # Git helper scripts
+├── docker/                 # Docker utilities
+├── package/                # Package management
+├── self/                   # Dotly self-management
+└── symlinks/               # Symlink management
+```
+
+**Creating custom contexts:**
+
+```bash
+# Create a new context
+mkdir -p $DOTFILES_PATH/scripts/deploy
+
+# Add a script
+cat > $DOTFILES_PATH/scripts/deploy/staging << 'EOF'
+#!/usr/bin/env bash
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+##? Deploy to staging environment
+##?
+##? Usage:
+##?    deploy staging
+docs::parse "$@"
+
+output::answer "Deploying to staging..."
+# Your deployment logic
+EOF
+
+chmod +x $DOTFILES_PATH/scripts/deploy/staging
+```
+
+Now run with: `dot deploy staging`
+
+<Tip>
+  Scripts in `$DOTFILES_PATH/scripts/` override scripts with the same name in `$DOTLY_PATH/scripts/`, allowing you to customize default dotly behavior.
+</Tip>
+
+### shell/
+
+Shell configuration files for bash, zsh, and other shells.
+
+**Structure:**
+
+```bash
+shell/
+├── aliases.sh              # Command aliases
+├── exports.sh              # Environment variables and PATH
+├── functions.sh            # Shell functions
+├── bash/
+│   └── .bashrc
+└── zsh/
+    ├── .zimrc              # Zim plugin configuration
+    ├── .zshrc              # Zsh configuration
+    ├── .zshenv             # Environment setup
+    ├── .zlogin             # Login commands
+    └── .zim/               # Zim installation (auto-generated)
+```
+
+**Key files:**
+
+**exports.sh** - Environment configuration:
+
+```bash
+# Theme configuration
+export CODELY_THEME_MINIMAL=false
+export CODELY_THEME_MODE="dark"
+export CODELY_THEME_PROMPT_IN_NEW_LINE=false
+export CODELY_THEME_PWD_MODE="short"
+
+# Language environments
+export JAVA_HOME='/Library/Java/JavaVirtualMachines/amazon-corretto-15.jdk/Contents/Home'
+export GEM_HOME="$HOME/.gem"
+export GOPATH="$HOME/.go"
+
+# FZF colors
+export FZF_DEFAULT_OPTS="--color=$fzf_colors --reverse"
+```
+
+**aliases.sh** - Common shortcuts:
+
+```bash
+alias ..="cd .."
+alias ...="cd ../.."
+alias la="ls -lah"
+alias up="dot package update_all"
+```
+
+**functions.sh** - Reusable shell functions:
+
+```bash
+mkcd() {
+  mkdir -p "$1" && cd "$1"
+}
+
+extract() {
+  if [ -f "$1" ]; then
+    case "$1" in
+      *.tar.gz) tar xzf "$1" ;;
+      *.zip) unzip "$1" ;;
+      # ... more formats
+    esac
+  fi
+}
+```
+
+### symlinks/
+
+Configuration files that define symbolic links between your dotfiles and their target locations.
+
+**Available files:**
+
+```bash
+symlinks/
+├── conf.yaml               # Universal symlinks (all OS)
+├── conf.macos.yaml         # macOS-specific symlinks
+└── conf.linux.yaml         # Linux-specific symlinks
+```
+
+**Format:**
+
+```yaml
+# Target location: Source in dotfiles
+~/.gitconfig: git/.gitconfig
+~/.vimrc: editors/vim/.vimrc
+~/Library/Application Support/Code/User/settings.json: editors/code/settings.json
+```
+
+**Apply symlinks:**
+
+```bash
+dot symlinks apply
+```
+
+<Accordion title="How symlinks work">
+  When you run `dot symlinks apply`, dotly:
+  
+  1. Reads the appropriate `conf.*.yaml` file for your OS
+  2. Creates symbolic links from the target location to your dotfiles
+  3. Backs up any existing files before creating symlinks
+  4. Creates parent directories if they don't exist
+  
+  This means changes to files in your dotfiles are immediately reflected in their target locations, and vice versa.
+</Accordion>
+
+## Best Practices
+
+<Steps>
+  <Step title="Organize by purpose">
+    Keep related configurations together. Put editor configs in `editors/`, language configs in `langs/`, etc.
+  </Step>
+  
+  <Step title="Use OS-specific folders when needed">
+    If a configuration differs between macOS and Linux, create OS-specific subdirectories or symlink files.
+  </Step>
+  
+  <Step title="Document your custom setup">
+    Add README files in `doc/` explaining non-obvious configurations and custom scripts.
+  </Step>
+  
+  <Step title="Commit frequently">
+    Commit changes to your dotfiles repository after adding or modifying configurations.
+  </Step>
+  
+  <Step title="Test restoration scripts">
+    Periodically test your `restoration_scripts/` in a clean environment to ensure they work correctly.
+  </Step>
+</Steps>
+
+## Real-World Example
+
+Here's a typical dotfiles structure for a full-stack developer:
+
+```bash
+~/.dotfiles/
+├── bin/
+│   ├── git-cleanup           # Custom git helper
+│   └── dev-server            # Local dev server script
+├── editors/
+│   └── code/
+│       ├── settings.json
+│       └── keybindings.json
+├── git/
+│   ├── .gitconfig
+│   └── .gitignore_global
+├── langs/
+│   ├── js/.npmrc
+│   ├── python/.pylintrc
+│   └── go/env.sh
+├── os/
+│   └── macos/
+│       ├── brew/Brewfile
+│       └── defaults/
+├── restoration_scripts/
+│   ├── 01_brew_packages.sh
+│   └── 02_clone_repos.sh
+├── scripts/
+│   ├── docker/
+│   │   ├── cleanup
+│   │   └── logs
+│   └── deploy/
+│       ├── staging
+│       └── production
+├── shell/
+│   ├── aliases.sh
+│   ├── exports.sh
+│   └── zsh/
+│       └── .zimrc
+└── symlinks/
+    ├── conf.yaml
+    └── conf.macos.yaml
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="diagram-project" href="./architecture">
+    Understand how dotly works internally
+  </Card>
+  <Card title="Dot Command" icon="terminal" href="./dot-command">
+    Master the dot command and script system
+  </Card>
+</CardGroup>

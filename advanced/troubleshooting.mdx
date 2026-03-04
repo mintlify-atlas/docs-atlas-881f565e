@@ -1,0 +1,466 @@
+---
+title: 'Troubleshooting'
+description: 'Common issues and debugging tips for dotly'
+---
+
+## Debug Mode
+
+The most important tool for troubleshooting dotly is the built-in debug command.
+
+### Using `dot self debug`
+
+```bash
+dot self debug
+```
+
+This command tails the dotly log file in real-time, showing all operations and errors as they occur.
+
+<Tip>
+  Run `dot self debug` in a separate terminal window **in parallel** with any command you're troubleshooting. This lets you see detailed error output immediately.
+</Tip>
+
+**How it works:**
+
+The debug script monitors `~/dotly.log` (or `$DOTLY_LOG_FILE` if set) and displays all logged operations:
+
+```bash
+# From scripts/self/debug
+tail -f "$file"
+```
+
+All dotly operations log to this file, making it invaluable for diagnosing issues.
+
+## Common Installation Issues
+
+### Installation Fails Immediately
+
+<Accordion title="Missing dependencies">
+
+**Symptoms:**
+```
+Error: curl: command not found
+```
+or
+```
+Error: git: command not found
+```
+
+**Solution:**
+
+Install the required dependencies for your platform:
+
+<CodeGroup>
+
+```bash macOS
+# Install Homebrew first if needed
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Then install dependencies
+brew install git curl zsh
+```
+
+```bash Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install -y git curl zsh build-essential python3
+```
+
+```bash Fedora/RHEL
+sudo dnf install git curl zsh gcc-c++ python3
+```
+
+```bash Alpine
+apk add git curl zsh bash sudo g++ python3
+```
+
+</CodeGroup>
+
+</Accordion>
+
+<Accordion title="Network/Download Issues">
+
+**Symptoms:**
+```
+Error: Failed to download installer
+curl: (6) Could not resolve host
+```
+
+**Solution:**
+
+1. Check your internet connection
+2. Try using `wget` instead of `curl`:
+   ```bash
+   bash <(wget -qO- https://raw.githubusercontent.com/CodelyTV/dotly/HEAD/installer)
+   ```
+3. If behind a proxy, configure it:
+   ```bash
+   export http_proxy="http://proxy.example.com:8080"
+   export https_proxy="http://proxy.example.com:8080"
+   ```
+
+</Accordion>
+
+<Accordion title="Existing Dotfiles Directory">
+
+**Symptoms:**
+```
+The path '$HOME/.dotfiles' already exist
+```
+
+**Solution:**
+
+dotly will automatically create a backup with a timestamp:
+```
+$HOME/.dotfiles.1234567890.back
+```
+
+If you want to remove the existing directory manually:
+```bash
+mv ~/.dotfiles ~/.dotfiles.backup
+# Then run the installer again
+```
+
+</Accordion>
+
+## Git Submodule Issues
+
+### Submodule Not Initialized
+
+<Warning>
+  If dotly isn't working after cloning your dotfiles, the submodule is likely not initialized.
+</Warning>
+
+**Symptoms:**
+```
+-bash: dot: command not found
+```
+or
+```
+modules/dotly directory is empty
+```
+
+**Solution:**
+
+```bash
+cd $HOME/.dotfiles
+git submodule update --init --recursive modules/dotly
+```
+
+### Submodule Out of Date
+
+**Update dotly to the latest version:**
+
+```bash
+dot self update
+```
+
+Or manually:
+
+```bash
+cd $HOME/.dotfiles/modules/dotly
+git pull origin main
+cd $HOME/.dotfiles
+git add modules/dotly
+git commit -m "Update dotly to latest version"
+```
+
+## Permission Issues
+
+### Cannot Change Default Shell
+
+**Symptoms:**
+```
+chsh: /usr/bin/zsh is not in /etc/shells
+```
+
+**Solution:**
+
+Add zsh to the allowed shells:
+
+```bash
+command -v zsh | sudo tee -a /etc/shells
+sudo chsh -s "$(command -v zsh)"
+```
+
+### Scripts Not Executable
+
+**Symptoms:**
+```
+Permission denied: ./script.sh
+```
+
+**Solution:**
+
+```bash
+chmod +x ~/.dotfiles/scripts/your-context/your-script
+# Or for all scripts:
+find ~/.dotfiles/scripts -type f -name "*.sh" -exec chmod +x {} \;
+```
+
+## Shell Issues
+
+### Zsh Not Activating
+
+**Check if zsh is your default shell:**
+
+```bash
+echo $SHELL
+```
+
+**Should output:**
+```
+/bin/zsh
+```
+
+**If not, change it:**
+
+```bash
+sudo chsh -s "$(command -v zsh)" "$USER"
+```
+
+Then restart your terminal or log out and back in.
+
+### Theme Not Loading
+
+**Symptoms:**
+- Prompt looks broken
+- Missing icons or colors
+
+**Solution:**
+
+1. Ensure you're using a font that supports powerline/icons
+2. Verify theme settings in `~/.dotfiles/shell/exports.sh`:
+   ```bash
+   export CODELY_THEME_MINIMAL=false
+   export CODELY_THEME_MODE="dark"  # or "light"
+   export CODELY_THEME_PROMPT_IN_NEW_LINE=false
+   export CODELY_THEME_PWD_MODE="short"  # or "full" or "home_relative"
+   ```
+3. Reload your shell configuration:
+   ```bash
+   source ~/.zshrc
+   ```
+
+### Completions Not Working
+
+**Rebuild completions:**
+
+```bash
+dot shell zsh reload_completions
+```
+
+**Then restart your shell:**
+
+```bash
+exec zsh
+```
+
+## Package Manager Issues
+
+### Package Import Fails
+
+**Symptoms:**
+```
+Error importing packages
+Package 'xyz' not found
+```
+
+**Solution:**
+
+1. Check your package manager is installed:
+   ```bash
+   # macOS
+   which brew
+   
+   # Ubuntu/Debian
+   which apt-get
+   ```
+
+2. Update package manager:
+   ```bash
+   dot package update_all
+   ```
+
+3. Manually verify package files:
+   ```bash
+   cat ~/.dotfiles/os/mac/brew/Brewfile  # macOS
+   cat ~/.dotfiles/os/linux/apt/packages.txt  # Linux
+   ```
+
+## Symlink Issues
+
+### Symlinks Not Created
+
+**Symptoms:**
+- Config files in their original locations, not using dotly versions
+- Changes to versioned configs don't take effect
+
+**Solution:**
+
+```bash
+dot symlinks apply
+```
+
+**Verify symlinks are configured:**
+
+Check your platform-specific symlink configuration:
+- macOS: `~/.dotfiles/symlinks/conf.macos.yaml`
+- Linux: `~/.dotfiles/symlinks/conf.linux.yaml`
+
+**Example symlink configuration:**
+```yaml
+~/.gitconfig: git/gitconfig
+~/.zshrc: shell/zsh/.zshrc
+```
+
+### Symlink Conflicts
+
+**Symptoms:**
+```
+Error: File exists and is not a symlink
+```
+
+**Solution:**
+
+dotly automatically backs up existing files during installation. If you need to manually resolve:
+
+```bash
+# Backup the existing file
+mv ~/.gitconfig ~/.gitconfig.backup
+
+# Reapply symlinks
+dot symlinks apply
+```
+
+## macOS Specific Issues
+
+### Command Line Tools Missing
+
+**Symptoms:**
+```
+Error: No developer tools installed
+```
+
+**Solution:**
+
+```bash
+xcode-select --install
+```
+
+### Homebrew Not Found
+
+**Install Homebrew:**
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+## CI/CD Issues
+
+### CI Pipeline Fails
+
+**Check the dotly log:**
+
+From the CI configuration:
+
+```yaml
+- name: Debug on error
+  if: ${{ failure() }}
+  run: |
+    echo "DOTLY_REPOSITORY: $DOTLY_REPOSITORY"
+    echo "DOTLY_BRANCH: $DOTLY_BRANCH"
+    echo "DOTLY_ENV: $DOTLY_ENV"
+    cat "$HOME/dotly.log"
+```
+
+**Set environment variables:**
+
+```yaml
+- name: Set environment
+  run: |
+    echo "DOTLY_REPOSITORY=YourUser/dotly" >> $GITHUB_ENV
+    echo "DOTLY_BRANCH=main" >> $GITHUB_ENV
+    echo "DOTLY_ENV=CI" >> $GITHUB_ENV
+```
+
+## Getting Help
+
+<Steps>
+
+<Step title="Run Debug Mode">
+  Start with `dot self debug` to capture detailed error output
+</Step>
+
+<Step title="Check the Log">
+  Review `~/dotly.log` for specific error messages
+</Step>
+
+<Step title="Search Issues">
+  Check [existing GitHub issues](https://github.com/CodelyTV/dotly/issues) for similar problems
+</Step>
+
+<Step title="Open an Issue">
+  If you can't find a solution, [open a new issue](https://github.com/CodelyTV/dotly/issues/new) with:
+  - Your OS and version
+  - The exact command that failed
+  - Relevant output from `dot self debug`
+  - Your dotly version (`cd ~/.dotfiles/modules/dotly && git describe --tags`)
+</Step>
+
+</Steps>
+
+<Note>
+  When reporting issues, always include the output from `dot self debug` and sanitize any sensitive information.
+</Note>
+
+## Advanced Debugging
+
+### Enable Verbose Logging
+
+Set the environment variable before running commands:
+
+```bash
+export DOTLY_ENV=DEBUG
+dot your-command
+```
+
+### Check Environment Variables
+
+```bash
+env | grep DOTLY
+env | grep DOTFILES
+```
+
+Should show:
+```
+DOTFILES_PATH=/home/user/.dotfiles
+DOTLY_PATH=/home/user/.dotfiles/modules/dotly
+DOTLY_LOG_FILE=/home/user/dotly.log
+```
+
+### Validate Installation
+
+```bash
+# Check dotly is in PATH
+which dot
+
+# Check dotfiles structure
+ls -la $DOTFILES_PATH
+
+# Check dotly installation
+ls -la $DOTLY_PATH
+
+# Verify git submodules
+cd $DOTFILES_PATH
+git submodule status
+```
+
+## Still Having Issues?
+
+<CardGroup cols={2}>
+  <Card title="Docker Testing" icon="docker" href="/advanced/docker">
+    Test in an isolated Docker environment
+  </Card>
+  <Card title="Contributing" icon="github" href="/advanced/contributing">
+    Found a bug? Submit a fix!
+  </Card>
+</CardGroup>

@@ -1,0 +1,441 @@
+---
+title: 'Contributing to dotly'
+description: 'How to contribute to the dotly project'
+---
+
+## Welcome Contributors!
+
+Thank you for your interest in contributing to dotly! This guide will help you get started with contributing to the project.
+
+<Note>
+  Before implementing a new feature or script, please open an issue first to discuss it with the maintainers.
+</Note>
+
+## Getting Started
+
+<Steps>
+
+<Step title="Fork and Clone">
+  Fork the [dotly repository](https://github.com/CodelyTV/dotly) and clone your fork:
+  
+  ```bash
+  git clone https://github.com/YOUR_USERNAME/dotly.git
+  cd dotly
+  ```
+</Step>
+
+<Step title="Set Up Development Environment">
+  Set the required environment variables:
+  
+  ```bash
+  export DOTLY_PATH="$PWD"
+  export DOTFILES_PATH="$HOME/.dotfiles"  # or your dotfiles location
+  ```
+  
+  Add dotly to your PATH:
+  ```bash
+  export PATH="$DOTLY_PATH/bin:$PATH"
+  ```
+</Step>
+
+<Step title="Install Development Dependencies">
+  Install the tools needed for testing and development:
+  
+  <CodeGroup>
+  
+  ```bash macOS
+  brew install shellcheck shfmt
+  ```
+  
+  ```bash Ubuntu/Debian
+  sudo apt-get install shellcheck
+  
+  # Install shfmt
+  go install mvdan.cc/sh/v3/cmd/shfmt@latest
+  ```
+  
+  ```bash Using Go Directly
+  # Install shfmt
+  go install mvdan.cc/sh/v3/cmd/shfmt@latest
+  
+  # Make sure Go bin is in PATH
+  export PATH="$PATH:$HOME/go/bin"
+  ```
+  
+  </CodeGroup>
+</Step>
+
+</Steps>
+
+## Development Workflow
+
+### Making Changes
+
+1. **Create a new branch:**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. **Make your changes:**
+   - Edit existing scripts in `scripts/`
+   - Add new scripts following the existing structure
+   - Update documentation if needed
+
+3. **Test your changes:**
+   ```bash
+   # Test the specific command
+   dot your-context your-script
+   
+   # Or test manually
+   bash scripts/your-context/your-script
+   ```
+
+### Code Style Guidelines
+
+#### Bash Scripts
+
+All bash scripts should follow these conventions:
+
+**1. Use the dotly template:**
+
+```bash
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+##? Brief description of what this script does
+##?
+##? Usage:
+##?    script-name
+##?    script-name [--flag] [argument]
+docs::parse "$@"
+
+# Your script logic here
+```
+
+**2. Key requirements:**
+- Always use `set -euo pipefail` for error handling
+- Source the dotly core library
+- Include usage documentation with `##?` comments
+- Use `docs::parse "$@"` to parse arguments
+
+**3. Declare dependencies:**
+
+```bash
+script::depends_on git fzf
+```
+
+This ensures required commands are available before running.
+
+## Testing Your Changes
+
+### Run Linting
+
+Check code formatting:
+
+```bash
+dot self lint
+```
+
+**Fix formatting issues automatically:**
+
+```bash
+dot self lint --fix
+```
+
+**Lint your dotfiles too:**
+
+```bash
+dot self lint --dotfiles
+dot self lint --fix --dotfiles
+```
+
+<Tip>
+  The linter uses [shfmt](https://github.com/mvdan/sh) with these options:
+  - `-i 0` - Use tabs for indentation
+  - `-s` - Simplify the code
+  - `-w` - Write result to file (with `--fix`)
+  - `-d` - Show diff (without `--fix`)
+</Tip>
+
+### Run Static Analysis
+
+Check for common bash mistakes and bugs:
+
+```bash
+dot self static_analysis
+```
+
+**Analyze your dotfiles:**
+
+```bash
+dot self static_analysis --dotfiles
+```
+
+This uses [ShellCheck](https://www.shellcheck.net/) to catch:
+- Syntax errors
+- Semantic problems
+- Subtle caveats
+- Common pitfalls
+
+**ShellCheck configuration:**
+```bash
+shellcheck -s bash -S warning -e SC1090 -e SC2010 -e SC2154
+```
+
+- `-s bash` - Specify bash dialect
+- `-S warning` - Minimum severity is warning
+- `-e SC1090` - Ignore "Can't follow non-constant source"
+- `-e SC2010` - Ignore "Don't use ls | grep"
+- `-e SC2154` - Ignore "var is referenced but not assigned"
+
+### Testing in Docker
+
+Test your changes in a clean environment:
+
+<CodeGroup>
+
+```bash Alpine
+# Mount your development version
+docker run -e TERM -e COLORTERM -e LC_ALL=C.UTF-8 -w /root -it --rm \
+  -v "$PWD:/root/dotly-dev" \
+  alpine sh -uec '
+  apk add curl sudo bash zsh git g++ python3
+  export DOTLY_PATH="/root/dotly-dev"
+  export PATH="$DOTLY_PATH/bin:$PATH"
+  # Test your changes
+  dot your-command
+  zsh'
+```
+
+```bash Ubuntu
+docker run -e TERM -e COLORTERM -w /root -it --rm \
+  -v "$PWD:/root/dotly-dev" \
+  ubuntu sh -uec '
+  apt-get update
+  apt-get install -y curl build-essential sudo zsh git
+  export DOTLY_PATH="/root/dotly-dev"
+  export PATH="$DOTLY_PATH/bin:$PATH"
+  # Test your changes
+  dot your-command
+  zsh'
+```
+
+</CodeGroup>
+
+## Continuous Integration
+
+All pull requests are automatically tested on:
+- **macOS 12**
+- **Ubuntu 20.04**
+
+The CI pipeline runs:
+
+1. **Full installation test:**
+   ```yaml
+   - name: Install
+     run: echo "$HOME/.dotfiles" | bash installer
+   ```
+
+2. **Static analysis:**
+   ```yaml
+   - name: Static analysis
+     run: bash scripts/self/static_analysis
+   ```
+
+3. **Linting:**
+   ```yaml
+   - name: Lint bash files
+     run: bash scripts/self/lint
+   ```
+
+<Warning>
+  Your PR must pass all CI checks before it can be merged. Run `dot self lint` and `dot self static_analysis` locally before pushing.
+</Warning>
+
+## Submitting Your Changes
+
+### Opening an Issue
+
+Before submitting a PR, consider opening an issue if:
+- You're proposing a new feature
+- You're making significant architectural changes
+- You're unsure if a change would be accepted
+
+**Good issue content includes:**
+- Clear description of the problem or feature
+- Use cases and examples
+- Proposed solution (if applicable)
+- Willingness to implement it yourself
+
+### Creating a Pull Request
+
+<Steps>
+
+<Step title="Ensure Code Quality">
+  Run all checks locally:
+  
+  ```bash
+  # Lint your code
+  dot self lint
+  
+  # Run static analysis
+  dot self static_analysis
+  
+  # Test your changes manually
+  dot your-context your-script
+  ```
+</Step>
+
+<Step title="Commit Your Changes">
+  Use clear, descriptive commit messages:
+  
+  ```bash
+  git add .
+  git commit -m "Add feature: brief description"
+  ```
+  
+  **Good commit message examples:**
+  - `Add git pretty-log script with filtering`
+  - `Fix symlink apply for spaces in paths`
+  - `Update theme to support light mode`
+</Step>
+
+<Step title="Push and Create PR">
+  ```bash
+  git push origin feature/your-feature-name
+  ```
+  
+  Then create a PR on GitHub with:
+  - Clear title describing the change
+  - Description of what changed and why
+  - Reference to any related issues
+  - Screenshots or examples if applicable
+</Step>
+
+</Steps>
+
+### PR Checklist
+
+Before submitting, ensure:
+
+- [ ] Code follows dotly's bash style conventions
+- [ ] All scripts have proper `##?` documentation
+- [ ] `dot self lint` passes
+- [ ] `dot self static_analysis` passes
+- [ ] Changes are tested manually
+- [ ] Commit messages are clear and descriptive
+- [ ] PR description explains the changes
+
+## Script Structure
+
+### Adding a New Script
+
+Scripts are organized by context in `scripts/`:
+
+```
+scripts/
+├── git/          # Git-related scripts
+├── package/      # Package management scripts
+├── self/         # dotly self-management
+├── shell/        # Shell utilities
+└── your-context/ # Your new context
+```
+
+**Create a new script:**
+
+```bash
+mkdir -p scripts/your-context
+touch scripts/your-context/your-script
+chmod +x scripts/your-context/your-script
+```
+
+**Example script template:**
+
+```bash
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+source "$DOTLY_PATH/scripts/core/_main.sh"
+
+##? Description of your script
+##?
+##? Usage:
+##?    your-script
+##?    your-script [--option] <argument>
+docs::parse "$@"
+script::depends_on git  # Add dependencies
+
+# Script implementation
+output::answer "Doing something..."
+
+# Use dotly output functions
+output::error "Something went wrong"  # For errors
+output::success "All done!"            # For success
+output::write "Regular output"         # For normal output
+```
+
+### Using dotly Core Functions
+
+The core library provides useful functions:
+
+```bash
+# Output functions
+output::answer "Question or info"
+output::error "Error message"
+output::success "Success message"
+output::write "Regular message"
+
+# Platform detection
+if platform::is_macos; then
+  echo "Running on macOS"
+fi
+
+if platform::is_linux; then
+  echo "Running on Linux"
+fi
+
+# String utilities
+if str::contains "search" "$haystack"; then
+  echo "Found it"
+fi
+
+# Logging
+some_command | log::file "Operation description"
+```
+
+## Documentation
+
+If your changes affect user-facing functionality:
+
+1. Update the README if needed
+2. Add usage examples to your script's `##?` comments
+3. Consider adding documentation to the wiki
+
+## Questions?
+
+<CardGroup cols={2}>
+  <Card title="Open an Issue" icon="github" href="https://github.com/CodelyTV/dotly/issues/new">
+    Ask questions or discuss ideas
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/advanced/troubleshooting">
+    Debug issues you encounter
+  </Card>
+</CardGroup>
+
+## Code of Conduct
+
+Be respectful and constructive in all interactions. We're building this together!
+
+## License
+
+By contributing to dotly, you agree that your contributions will be licensed under the MIT License.
+
+---
+
+<Note>
+  Special thanks to all contributors who help make dotly better! Your efforts are appreciated.
+</Note>

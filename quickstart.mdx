@@ -1,80 +1,537 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick Start
+description: Get started with dotly in minutes - from installation to your first commands
 ---
 
-## Get started in three steps
+# Quick Start Guide
 
-Get your documentation site running locally and make your first customization.
+This guide will help you get up and running with dotly quickly. By the end, you'll understand the basic workflow and be able to start customizing your development environment.
 
-### Step 1: Set up your local environment
+## Prerequisites
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+Before starting, make sure you have:
+
+- dotly installed on your system ([Installation Guide](/installation))
+- Restarted your terminal after installation
+- A GitHub account (for backing up your dotfiles)
+
+## Verify Installation
+
+First, verify that dotly is properly installed:
+
+```bash
+dot -h
+```
+
+You should see the help message:
+
+```
+Usage:
+   dot
+   dot <context>
+   dot <context> <script> [<args>...]
+   dot -h | --help
+```
+
+<Info>
+  If the `dot` command is not found, make sure you restarted your terminal after installation.
+</Info>
+
+## Understanding Your Dotfiles Structure
+
+Your dotfiles are now located at `~/.dotfiles` (or wherever you specified during installation). Let's explore the structure:
+
+```bash
+cd ~/.dotfiles
+ls -la
+```
+
+You'll see a structure like this:
+
+```bash
+├── bin                 # External binaries/symlinks (highest $PATH priority)
+├── doc                 # Documentation for your dotfiles
+├── editors             # Editor settings (VSCode, IntelliJ IDEA, Vim, etc.)
+├── git                 # Git configuration
+├── langs               # Programming language configs (Node, Python, Java, etc.)
+├── os                  # OS-specific configs and apps
+├── restoration_scripts # Scripts to run when restoring dotfiles
+├── scripts             # Your custom scripts organized by context
+├── shell               # Bash/Zsh configuration files
+└── symlinks            # Symlink configuration files
+```
+
+Each directory serves a specific purpose in organizing your development environment.
+
+## Create Your Dotfiles Repository
+
+To back up and sync your dotfiles across machines, you need to push them to a Git repository.
+
+<Steps>
+  <Step title="Create a GitHub repository">
+    1. Go to [GitHub](https://github.com/new)
+    2. Create a new repository named `dotfiles`
+    3. Make it private (recommended) or public
+    4. Don't initialize with README, .gitignore, or license
+    5. Copy the repository URL
+  </Step>
+
+  <Step title="Connect and push your dotfiles">
+    Navigate to your dotfiles directory and push:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    ```bash
+    cd ~/.dotfiles
+    git remote add origin YOUR_REPOSITORY_URL
+    git add -A
+    git commit -m "Initial commit with dotly"
+    git push -u origin main
+    ```
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    Replace `YOUR_REPOSITORY_URL` with your actual repository URL.
+  </Step>
+</Steps>
 
-### Step 2: Deploy your changes
+<Warning>
+  Always commit your changes when you modify configs or add scripts. This ensures your dotfiles are backed up and can be restored on other machines.
+</Warning>
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+## Using the `dot` Command
+
+The `dot` command is the heart of dotly. It provides an interactive way to run scripts and manage your dotfiles.
+
+### Interactive Mode
+
+Run `dot` without arguments to see all available scripts:
+
+```bash
+dot
+```
+
+This opens an interactive fuzzy finder where you can:
+- Browse all available scripts
+- Preview script documentation
+- Select and run scripts
+- Pass arguments to scripts
+
+### Context Mode
+
+View scripts in a specific context:
+
+```bash
+# View all git-related scripts
+dot git
+
+# View all package management scripts
+dot package
+
+# View all self-maintenance scripts
+dot self
+```
+
+### Direct Execution
+
+Run a specific script directly:
+
+```bash
+# Run a git commit
+dot git commit
+
+# Update all packages
+dot package update_all
+
+# Debug dotly
+dot self debug
+```
+
+## Exploring Built-in Scripts
+
+dotly comes with many useful scripts out of the box. Here are some of the most commonly used:
+
+### Git Scripts
+
+```bash
+# Add all files and commit
+dot git commit
+
+# Show a pretty git log with filtering
+dot git pretty-log
+
+# Show a pretty git diff (with fzf)
+dot git pretty-diff
+
+# Amend the last commit
+dot git amend
+
+# List all contributors
+dot git contributors
+```
+
+### Package Management
+
+```bash
+# Add/install a package
+dot package add
+
+# Update all packages (brew, apt, etc.)
+dot package update_all
+
+# Export installed packages list
+dot package dump
+
+# Import previously dumped packages
+dot package import
+```
+
+### Symlinks
+
+```bash
+# Apply all configured symlinks
+dot symlinks apply
+```
+
+### Self Maintenance
+
+```bash
+# Update dotly to latest version
+dot self update
+
+# Debug dotly issues
+dot self debug
+
+# Run static analysis
+dot self static_analysis
+```
+
+## Install Your First Package
+
+Let's install a package using dotly's package management:
+
+<Steps>
+  <Step title="Add a package">
+    ```bash
+    dot package add
+    ```
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    This will prompt you to enter the package name (e.g., `jq`, `htop`, `tree`).
+  </Step>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+  <Step title="Verify installation">
+    After installation, the package information is saved in your dotfiles and can be synced across machines.
+  </Step>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+  <Step title="Export your packages">
+    Export all installed packages so you can restore them later:
+    
+    ```bash
+    dot package dump
+    ```
+  </Step>
 
-### Step 3: Go live
+  <Step title="Commit the changes">
+    ```bash
+    cd ~/.dotfiles
+    git add -A
+    git commit -m "Add package: jq"
+    git push
+    ```
+  </Step>
+</Steps>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+## Customize Your Shell
 
-## Next steps
+Let's customize your shell configuration:
 
-Now that you have your docs running, explore these key features:
+### Add an Alias
 
-<CardGroup cols={2}>
+Edit `~/.dotfiles/shell/aliases.sh` to add custom aliases:
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+```bash
+# Navigate to aliases file
+cd ~/.dotfiles
+vim shell/aliases.sh  # or use your preferred editor
+```
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+Add your custom aliases:
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+```bash
+# Your custom aliases
+alias projects="cd ~/projects"
+alias serve="python -m http.server"
+alias weather="curl wttr.in"
+```
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+dotly already includes useful aliases:
 
-</CardGroup>
+```bash
+# Directory navigation
+..          # cd ..
+...         # cd ../..
+dotfiles    # cd to your dotfiles directory
+
+# Git shortcuts
+gaa         # git add -A
+gs          # git status -sb
+gps         # git push
+gpl         # git pull --rebase --autostash
+
+# Utils
+up          # Update all packages
+la          # ls -la with colors
+```
+
+### Configure Theme
+
+Edit `~/.dotfiles/shell/exports.sh` to customize the terminal theme:
+
+```bash
+# Codely theme configuration
+export CODELY_THEME_MINIMAL=false          # Set to true for minimal prompt
+export CODELY_THEME_MODE="dark"            # "dark" or "light"
+export CODELY_THEME_PROMPT_IN_NEW_LINE=false  # Prompt on new line
+export CODELY_THEME_PWD_MODE="short"       # "short", "full", or "home_relative"
+```
+
+### Apply Changes
+
+After making changes, reload your shell:
+
+```bash
+# Restart your shell
+exec zsh
+
+# Or source the config
+source ~/.zshrc
+```
+
+## Version Control App Configurations
+
+One of dotly's most powerful features is versioning application configurations. Here's how to version your VSCode settings:
+
+<Steps>
+  <Step title="Locate your config file">
+    Find where your application stores its config. For VSCode on macOS:
+    ```
+    ~/Library/Application Support/Code/User/settings.json
+    ```
+  </Step>
+
+  <Step title="Copy config to dotfiles">
+    ```bash
+    cp "~/Library/Application Support/Code/User/settings.json" \
+       ~/.dotfiles/editors/code/settings.json
+    ```
+  </Step>
+
+  <Step title="Configure symlink">
+    Edit the appropriate symlink config file for your OS:
+    
+    ```bash
+    # For macOS
+    vim ~/.dotfiles/symlinks/conf.macos.yaml
+    
+    # For Linux
+    vim ~/.dotfiles/symlinks/conf.linux.yaml
+    ```
+    
+    Add your symlink:
+    ```yaml
+    ~/Library/Application Support/Code/User/settings.json: editors/code/settings.json
+    ```
+  </Step>
+
+  <Step title="Apply symlinks">
+    ```bash
+    dot symlinks apply
+    ```
+    
+    Now the file in your dotfiles is the source of truth, and changes sync automatically!
+  </Step>
+
+  <Step title="Commit to Git">
+    ```bash
+    cd ~/.dotfiles
+    git add -A
+    git commit -m "Add VSCode settings"
+    git push
+    ```
+  </Step>
+</Steps>
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  After setting up symlinks, any changes you make in VSCode settings will be reflected in your dotfiles repository.
 </Note>
+
+## Create Your First Custom Script
+
+Let's create a simple custom script:
+
+<Steps>
+  <Step title="Create a script directory">
+    Scripts are organized by context. Let's create a "work" context:
+    ```bash
+    mkdir -p ~/.dotfiles/scripts/work
+    ```
+  </Step>
+
+  <Step title="Create a script file">
+    ```bash
+    vim ~/.dotfiles/scripts/work/standup
+    ```
+    
+    Add the following content:
+    ```bash
+    #!/usr/bin/env bash
+    
+    ##? Opens today's standup notes
+    ##?
+    ##? Usage:
+    ##?    standup
+    
+    today=$(date +%Y-%m-%d)
+    notes_dir="$HOME/Documents/standup"
+    notes_file="$notes_dir/$today.md"
+    
+    mkdir -p "$notes_dir"
+    
+    if [ ! -f "$notes_file" ]; then
+      echo "# Standup - $today" > "$notes_file"
+      echo "" >> "$notes_file"
+      echo "## Yesterday" >> "$notes_file"
+      echo "" >> "$notes_file"
+      echo "## Today" >> "$notes_file"
+      echo "" >> "$notes_file"
+      echo "## Blockers" >> "$notes_file"
+    fi
+    
+    ${EDITOR:-vim} "$notes_file"
+    ```
+  </Step>
+
+  <Step title="Make it executable">
+    ```bash
+    chmod +x ~/.dotfiles/scripts/work/standup
+    ```
+  </Step>
+
+  <Step title="Use your script">
+    ```bash
+    # Run interactively
+    dot work
+    # Select 'standup'
+    
+    # Or run directly
+    dot work standup
+    ```
+  </Step>
+
+  <Step title="Commit your script">
+    ```bash
+    cd ~/.dotfiles
+    git add scripts/work/standup
+    git commit -m "Add standup script"
+    git push
+    ```
+  </Step>
+</Steps>
+
+<Info>
+  The `##?` comments at the top of the script provide documentation that appears in the fuzzy finder preview.
+</Info>
+
+## Restore on Another Machine
+
+When you get a new computer or want to sync your environment:
+
+<CodeGroup>
+
+```bash curl
+bash <(curl -s https://raw.githubusercontent.com/CodelyTV/dotly/HEAD/restorer)
+```
+
+```bash wget
+bash <(wget -qO- https://raw.githubusercontent.com/CodelyTV/dotly/HEAD/restorer)
+```
+
+</CodeGroup>
+
+Provide your GitHub username and repository name, and your entire environment will be restored!
+
+## Common Workflows
+
+### Daily Usage
+
+```bash
+# Update all packages
+up  # alias for 'dot package update_all'
+
+# Navigate to dotfiles
+dotfiles  # alias for 'cd $DOTFILES_PATH'
+
+# Git operations
+gs   # git status
+gaa  # git add all
+gc   # git commit (using dot git commit)
+gps  # git push
+```
+
+### Adding New Configurations
+
+```bash
+# 1. Add or modify files in ~/.dotfiles
+cd ~/.dotfiles
+vim shell/aliases.sh
+
+# 2. Commit changes
+git add -A
+git commit -m "Add new aliases"
+git push
+
+# 3. Reload shell
+exec zsh
+```
+
+### Syncing Across Machines
+
+```bash
+# On machine A: Push changes
+cd ~/.dotfiles
+git add -A
+git commit -m "Update configs"
+git push
+
+# On machine B: Pull changes
+cd ~/.dotfiles
+git pull
+# Restart terminal or source ~/.zshrc
+```
+
+## Next Steps
+
+Now that you're familiar with the basics, explore more advanced features:
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Deep dive into customizing dotly and your environment
+  </Card>
+  <Card title="Scripts" icon="terminal" href="/scripts">
+    Learn about all built-in scripts and create advanced custom scripts
+  </Card>
+  <Card title="Package Management" icon="box" href="/packages">
+    Master cross-platform package management
+  </Card>
+  <Card title="Symlinks" icon="link" href="/configuration/symlinks">
+    Configure symlinks for all your application configs
+  </Card>
+</CardGroup>
+
+## Need Help?
+
+<Card title="Troubleshooting" icon="wrench" href="/advanced/troubleshooting">
+  Common issues and solutions
+</Card>
+
+You can also run dotly's debug command:
+
+```bash
+dot self debug
+```

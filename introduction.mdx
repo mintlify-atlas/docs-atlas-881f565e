@@ -1,0 +1,162 @@
+---
+title: Introduction
+description: A simple and fast dotfiles framework for managing your development environment across macOS, Linux, and WSL
+---
+
+# Introduction to dotly
+
+dotly is a simple and fast dotfiles framework that helps you manage your development environment configurations across multiple machines and operating systems.
+
+## What is dotly?
+
+dotly is a dotfiles framework built on top of [zim](https://github.com/zimfw/zimfw), one of the fastest zsh frameworks available. It creates an opinionated but flexible structure to handle all your configuration files, scripts, and development environment setup.
+
+Think of it as a systematic way to:
+- Version control your configuration files
+- Sync your development environment across multiple machines
+- Organize your scripts and automation tools
+- Manage packages across different operating systems
+
+## Why use dotly?
+
+<CardGroup cols={2}>
+  <Card title="Cross-Platform" icon="laptop">
+    Works seamlessly on macOS, Linux distributions, and Windows Subsystem for Linux (WSL)
+  </Card>
+  <Card title="Blazing Fast" icon="bolt">
+    Built on top of zim, one of the fastest zsh frameworks, ensuring minimal performance impact
+  </Card>
+  <Card title="Modular Structure" icon="grid">
+    Organized folder structure for configs, scripts, OS-specific settings, and language configurations
+  </Card>
+  <Card title="Git-Based" icon="git">
+    Version control everything and sync across machines using Git
+  </Card>
+</CardGroup>
+
+## Key Features
+
+### Organized Structure
+
+dotly provides a clear, opinionated folder structure that makes it easy to organize your dotfiles:
+
+```bash
+├── bin                 # External binaries/symlinks (highest $PATH priority)
+├── doc                 # Documentation for your dotfiles
+├── editors             # Editor settings (VSCode, IntelliJ IDEA, Vim, etc.)
+├── git                 # Git configuration
+├── langs               # Programming language configs (Node, Python, Java, etc.)
+├── os                  # OS-specific configs and apps
+├── restoration_scripts # Scripts to run when restoring dotfiles
+├── scripts             # Your custom scripts organized by context
+├── shell               # Bash/Zsh configuration files
+└── symlinks            # Symlink configuration files
+```
+
+### Powerful `dot` Command
+
+The `dot` command is the core of dotly, providing:
+- Interactive script selection using fuzzy finding
+- Context-based organization (git, package, self, etc.)
+- Built-in scripts for common tasks
+- Easy addition of custom scripts
+
+```bash
+# Run dot to see all available scripts
+dot
+
+# View scripts in a specific context
+dot git
+
+# Execute a specific script
+dot git commit
+```
+
+### Built-in Scripts
+
+dotly comes with useful scripts out of the box:
+
+- **Package management**: Install, update, and sync packages across machines
+- **Git helpers**: Pretty diffs, commit utilities, contributor lists, and more
+- **Symlink management**: Automatically link config files to their proper locations
+- **Self-maintenance**: Update dotly, debug issues, and run diagnostics
+
+### Theme Customization
+
+dotly includes a minimal, fast, and powerful terminal theme that's fully customizable:
+
+```bash
+# Configure in shell/exports.sh
+export CODELY_THEME_MINIMAL=false
+export CODELY_THEME_MODE="dark"  # or "light"
+export CODELY_THEME_PROMPT_IN_NEW_LINE=false
+export CODELY_THEME_PWD_MODE="short"  # short, full, or home_relative
+```
+
+### Version Control for App Configurations
+
+Easily version control configuration files from any application:
+
+<Steps>
+  <Step title="Copy your config to dotfiles">
+    ```bash
+    cp ~/Library/Application Support/Code/User/settings.json \
+       $DOTFILES_PATH/editors/code/settings.json
+    ```
+  </Step>
+  <Step title="Create a symlink">
+    Edit `$DOTFILES_PATH/symlinks/conf.YOUR-OS.yaml` and add:
+    ```yaml
+    ~/Library/Application Support/Code/User/settings.json: editors/code/settings.json
+    ```
+  </Step>
+  <Step title="Apply symlinks">
+    ```bash
+    dot symlinks apply
+    ```
+  </Step>
+</Steps>
+
+Now your configuration is version controlled and will automatically sync across machines!
+
+## How It Works
+
+<Steps>
+  <Step title="Install dotly">
+    Run the installer script which sets up the dotfiles structure in `~/.dotfiles`
+  </Step>
+  <Step title="Configure your environment">
+    Add your configurations, scripts, and symlinks to the appropriate folders
+  </Step>
+  <Step title="Commit to Git">
+    Push your dotfiles to a Git repository for version control and backup
+  </Step>
+  <Step title="Restore anywhere">
+    Clone your dotfiles repo on any new machine and restore your entire environment
+  </Step>
+</Steps>
+
+## Use Cases
+
+- **New machine setup**: Restore your entire development environment in minutes
+- **Team standardization**: Share common configurations across your team
+- **Backup and recovery**: Never lose your carefully crafted configurations
+- **Cross-platform development**: Maintain consistent settings across different operating systems
+- **Script organization**: Keep all your automation scripts organized and portable
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Get started by installing dotly on your system
+  </Card>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Learn the basics and start using dotly in minutes
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Customize dotly to fit your workflow
+  </Card>
+  <Card title="Scripts" icon="terminal" href="/scripts">
+    Explore built-in scripts and create your own
+  </Card>
+</CardGroup>

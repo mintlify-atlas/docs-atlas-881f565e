@@ -1,0 +1,214 @@
+---
+title: Package Management Overview
+description: Learn how dotly's package manager abstraction works across different platforms
+---
+
+## What is Package Management in dotly?
+
+dotly provides a unified abstraction layer over various package managers, allowing you to install, manage, and synchronize packages across different operating systems and platforms. This abstraction means you can use the same `dot package` commands whether you're on macOS, Linux, or WSL.
+
+<Note>
+  The package management system automatically detects which package managers are available on your system and tries them in order until one succeeds.
+</Note>
+
+## Supported Package Managers
+
+dotly supports a wide range of package managers across different platforms:
+
+<CardGroup cols={2}>
+  <Card title="macOS" icon="apple">
+    - **Homebrew** (`brew`) - Primary package manager
+    - **MacPorts** (`ports`) - Alternative package manager
+    - **Mac App Store** (`mas`) - GUI applications
+    - **Cargo** (`cargo`) - Rust packages
+  </Card>
+  
+  <Card title="Linux" icon="linux">
+    - **APT** (`apt`) - Debian/Ubuntu based systems
+    - **DNF** (`dnf`) - Fedora/RHEL 8+
+    - **YUM** (`yum`) - Older RHEL/CentOS systems
+    - **Pacman** (`pacman`) - Arch Linux
+    - **Snap** (`snap`) - Universal packages
+    - **Homebrew** (`brew`) - Cross-platform support
+    - **Cargo** (`cargo`) - Rust packages
+  </Card>
+  
+  <Card title="Development Tools" icon="code">
+    - **NPM** (`npm`) - Node.js packages
+    - **Volta** (`volta`) - Node.js version manager
+    - **Pip** (`pip3`) - Python packages
+    - **Composer** (`composer`) - PHP packages
+    - **Gem** (`gem`) - Ruby packages
+  </Card>
+  
+  <Card title="IDE Extensions" icon="window">
+    - **VS Code** (`code`) - Editor extensions
+    - **Winget** (`winget`) - Windows package manager (WSL)
+  </Card>
+</CardGroup>
+
+## How Package Detection Works
+
+When you run `dot package add <package_name>`, dotly intelligently tries to install the package:
+
+<Steps>
+  <Step title="Check if already installed">
+    First, dotly checks if the package is already available as a command or installed via a recipe.
+  </Step>
+  
+  <Step title="Try package recipes">
+    If a custom recipe exists for the package (like `cargo`, `git-delta`, or `docpars`), dotly uses that specialized installation method.
+  </Step>
+  
+  <Step title="Try platform-specific managers">
+    On **macOS**, dotly tries package managers in this order:
+    ```bash
+    brew → mas → ports → cargo
+    ```
+    
+    On **Linux**, dotly tries:
+    ```bash
+    apt → dnf → yum → brew → pacman → cargo
+    ```
+  </Step>
+  
+  <Step title="Verify installation">
+    After each attempt, dotly verifies if the package command is now available. If successful, it stops trying other package managers.
+  </Step>
+</Steps>
+
+## Package Manager Implementations
+
+Each package manager has its own implementation in dotly. Here are some examples:
+
+<CodeGroup>
+```bash apt.sh
+apt::install() {
+	sudo apt-get -y install "$@"
+}
+```
+
+```bash brew.sh
+brew::install() {
+	# Some aliases
+	case "$1" in
+	"docpars") package="denisidoro/tools/docpars" ;;
+	*) package="$1" ;;
+	esac
+
+	brew install "$package"
+}
+```
+
+```bash pacman.sh
+pacman::install() {
+	if platform::command_exists yay; then
+		sudo yay -S --noconfirm "$@"
+	else
+		sudo pacman -S --noconfirm "$@"
+	fi
+}
+```
+</CodeGroup>
+
+## Package Recipes
+
+Package recipes are custom installation scripts for packages that require special handling. They're defined in `scripts/package/recipes/`.
+
+### Recipe Structure
+
+Each recipe must implement two functions:
+
+```bash
+# Installation function
+package-name::install() {
+	# Custom installation logic
+}
+
+# Check if installed function
+package-name::is_installed() {
+	# Return 0 if installed, 1 otherwise
+	platform::command_exists command-name
+}
+```
+
+### Example: Cargo Recipe
+
+The `cargo` recipe shows how to handle complex installations:
+
+```bash cargo.sh
+cargo::install() {
+	platform::command_exists brew && brew install rust 2>&1 | log::file "Installing rust" && return 0 || true
+
+	if platform::command_exists apt; then
+		sudo apt install -y build-essential 2>&1 | log::file "Installing apt build-essential"
+	fi
+
+	curl https://sh.rustup.rs -sSf | sh -s -- -y 2>&1 | log::file "Installing rust from sources"
+
+	export PATH="$HOME/.cargo/bin:$PATH"
+	source "$HOME/.cargo/env"
+}
+
+cargo::is_installed() {
+	platform::command_exists cargo
+}
+```
+
+<Tip>
+  Recipes are useful when a package has a different name than its command, requires pre-dependencies, or needs custom installation steps.
+</Tip>
+
+### Example: git-delta Recipe
+
+Some recipes delegate to the standard installation process with special flags:
+
+```bash git-delta.sh
+git-delta::install() {
+	"$DOTLY_PATH/bin/dot" package add git-delta --skip-recipe
+}
+
+git-delta::is_installed() {
+	platform::command_exists delta
+}
+```
+
+This recipe handles the case where the package name (`git-delta`) differs from the command name (`delta`).
+
+## Package Context
+
+All package operations in dotly use these environment paths:
+
+<Accordion title="Package dump file locations">
+  ```bash
+  # Platform-specific
+  HOMEBREW_DUMP_FILE_PATH="$DOTFILES_PATH/os/mac/brew/Brewfile"  # macOS
+  HOMEBREW_DUMP_FILE_PATH="$DOTFILES_PATH/os/linux/brew/Brewfile"  # Linux
+  APT_DUMP_FILE_PATH="$DOTFILES_PATH/os/linux/apt/packages.txt"
+  PACMAN_DUMP_FILE_PATH="$DOTFILES_PATH/os/linux/pacman/packages.txt"
+  SNAP_DUMP_FILE_PATH="$DOTFILES_PATH/os/linux/snap/packages.txt"
+  WINGET_DUMP_FILE_PATH="$DOTFILES_PATH/os/windows/winget.output"
+  
+  # Language-specific
+  NPM_DUMP_FILE_PATH="$DOTFILES_PATH/langs/js/global_modules.txt"
+  VOLTA_DUMP_FILE_PATH="$DOTFILES_PATH/langs/js/volta_dependencies.txt"
+  PYTHON_DUMP_FILE_PATH="$DOTFILES_PATH/langs/python/requirements.txt"
+  
+  # Editor extensions
+  CODE_DUMP_FILE_PATH="$DOTFILES_PATH/editors/code/extensions.txt"
+  ```
+</Accordion>
+
+These files are automatically created when you run `dot package dump` and used when you run `dot package import` on a new machine.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Installing Packages" icon="download" href="/packages/installing">
+    Learn how to install packages with `dot package add`
+  </Card>
+  
+  <Card title="Managing Packages" icon="boxes-stacked" href="/packages/managing">
+    Dump, import, and update packages across machines
+  </Card>
+</CardGroup>

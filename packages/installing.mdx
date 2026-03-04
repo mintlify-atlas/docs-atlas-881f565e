@@ -1,0 +1,324 @@
+---
+title: Installing Packages
+description: Install packages across different platforms using dot package add
+---
+
+## Basic Installation
+
+The `dot package add` command provides a unified way to install packages regardless of your platform:
+
+```bash
+dot package add <package_name>
+```
+
+<Note>
+  dotly automatically detects which package managers are available on your system and tries them until the package is successfully installed.
+</Note>
+
+## How It Works
+
+When you run `dot package add`, here's what happens:
+
+<Steps>
+  <Step title="Check if package exists">
+    dotly first checks if the package is already installed as a command or through a recipe:
+    
+    ```bash
+    platform::command_exists "$package_name" && log::success "$package_name already installed" && exit 0
+    ```
+  </Step>
+  
+  <Step title="Try package recipe">
+    If a custom recipe exists for the package, dotly uses it:
+    
+    ```bash
+    if registry::install "$package_name"; then
+      output::write "✅ \`$package_name\` installed"
+      exit 0
+    fi
+    ```
+  </Step>
+  
+  <Step title="Try platform package managers">
+    If no recipe exists, dotly tries each available package manager in sequence.
+  </Step>
+  
+  <Step title="Verify and report">
+    After each attempt, dotly checks if the command is now available and reports success or failure.
+  </Step>
+</Steps>
+
+## Platform-Specific Behavior
+
+### macOS Installation Order
+
+On macOS, dotly tries package managers in this order:
+
+<CodeGroup>
+```bash Installation sequence
+for package_manager in brew mas ports cargo; do
+  package::install $package_manager "$package_name" 2>&1 | log::file "Trying to install $package_name using $package_manager"
+  
+  if platform::command_exists "$package_name"; then
+    output::write "✅ \`$package_name\` installed"
+    exit 0
+  fi
+done
+```
+
+```bash Example output
+$ dot package add jq
+
+Trying to install jq using brew
+✅ `jq` installed
+```
+</CodeGroup>
+
+### Linux Installation Order
+
+On Linux, dotly tries these package managers:
+
+<CodeGroup>
+```bash Installation sequence
+for package_manager in apt dnf yum brew pacman cargo; do
+  package::install $package_manager "$package_name" 2>&1 | log::file "Trying to install $package_name using $package_manager"
+  
+  if platform::command_exists "$package_name"; then
+    output::write "✅ \`$package_name\` installed"
+    exit 0
+  fi
+done
+```
+
+```bash Example output
+$ dot package add ripgrep
+
+Trying to install ripgrep using apt
+✅ `ripgrep` installed
+```
+</CodeGroup>
+
+<Tip>
+  The order is optimized for each platform. On macOS, `brew` is tried first as it's the most common. On Linux, native package managers like `apt` are tried before cross-platform ones.
+</Tip>
+
+## Installing with Package Recipes
+
+Some packages have custom installation recipes that handle special cases. These are tried before generic package managers.
+
+### Example: Installing Cargo
+
+The `cargo` package requires special handling because it needs build tools:
+
+```bash
+$ dot package add cargo
+
+# dotly will:
+# 1. Try to install rust via brew (if on macOS)
+# 2. Install build-essential via apt (if on Linux)
+# 3. Download and run rustup installer
+# 4. Set up PATH correctly
+
+✅ `cargo` installed
+```
+
+The recipe handles all these steps automatically:
+
+```bash cargo recipe
+cargo::install() {
+  platform::command_exists brew && brew install rust && return 0
+  
+  if platform::command_exists apt; then
+    sudo apt install -y build-essential
+  fi
+  
+  curl https://sh.rustup.rs -sSf | sh -s -- -y
+  export PATH="$HOME/.cargo/bin:$PATH"
+}
+```
+
+### Example: Installing git-delta
+
+The `git-delta` package has a different command name (`delta`):
+
+```bash
+$ dot package add git-delta
+
+# The recipe knows to:
+# 1. Install the git-delta package
+# 2. Check for the 'delta' command
+
+✅ `git-delta` installed
+```
+
+## Skipping Recipes
+
+You can force dotly to skip the recipe and use generic package managers:
+
+```bash
+dot package add <package_name> --skip-recipe
+```
+
+This is useful when:
+- You want to use a specific package manager
+- The recipe behavior isn't what you need
+- You're debugging installation issues
+
+<CodeGroup>
+```bash With recipe
+$ dot package add git-delta
+# Uses the git-delta recipe
+✅ `git-delta` installed
+```
+
+```bash Skip recipe
+$ dot package add git-delta --skip-recipe
+# Tries brew, mas, ports, cargo in order
+✅ `git-delta` installed
+```
+</CodeGroup>
+
+## Real-World Examples
+
+### Installing Command-Line Tools
+
+<CodeGroup>
+```bash Modern CLI tools
+# JSON processor
+dot package add jq
+
+# Faster grep
+dot package add ripgrep
+
+# Better cat
+dot package add bat
+
+# Fuzzy finder
+dot package add fzf
+```
+
+```bash Development tools
+# Git tools
+dot package add git-delta
+dot package add gh
+
+# Build tools
+dot package add cmake
+dot package add make
+```
+</CodeGroup>
+
+### Installing Language Runtimes
+
+```bash
+# Node.js version manager
+dot package add volta
+
+# Rust toolchain
+dot package add cargo
+
+# Python package manager
+dot package add pip3
+```
+
+### Installing from Specific Sources
+
+Some package managers have special handling:
+
+<CodeGroup>
+```bash Homebrew taps
+# The brew recipe handles special cases
+dot package add docpars
+# Installs from denisidoro/tools/docpars tap
+```
+
+```bash AUR packages (Arch Linux)
+# Pacman recipe tries yay first for AUR support
+dot package add yay
+dot package add some-aur-package
+```
+</CodeGroup>
+
+## Error Handling
+
+If installation fails across all package managers:
+
+```bash
+$ dot package add nonexistent-package
+
+Trying to install nonexistent-package using brew
+Trying to install nonexistent-package using mas
+Trying to install nonexistent-package using ports
+Trying to install nonexistent-package using cargo
+❌ `nonexistent-package` could not be installed
+```
+
+<Tip>
+  Check the logs for more details:
+  ```bash
+  dot self debug
+  ```
+  This will show detailed output from each package manager attempt.
+</Tip>
+
+## Success Indicators
+
+Successful installation is verified by checking if the command exists:
+
+```bash Installation verification
+if platform::command_exists "$package_name"; then
+  output::write "✅ \`$package_name\` installed"
+  exit 0
+fi
+```
+
+For recipes, custom verification is used:
+
+```bash Recipe verification
+git-delta::is_installed() {
+  platform::command_exists delta  # Check for 'delta', not 'git-delta'
+}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use generic names" icon="tag">
+    Use standard package names when possible. dotly will find the right package manager.
+    ```bash
+    dot package add wget
+    ```
+  </Card>
+  
+  <Card title="Let recipes handle complexity" icon="wand-magic-sparkles">
+    Don't skip recipes unless necessary. They handle platform differences automatically.
+  </Card>
+  
+  <Card title="Check before installing" icon="magnifying-glass">
+    Use `which` or `command -v` to verify if a package is already installed:
+    ```bash
+    which jq || dot package add jq
+    ```
+  </Card>
+  
+  <Card title="Document custom packages" icon="book">
+    Keep track of manually installed packages in your dotfiles:
+    ```bash
+    # restoration_scripts/packages.sh
+    dot package add jq
+    dot package add ripgrep
+    ```
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Package Overview" icon="box" href="/packages/overview">
+    Learn about package manager abstraction and recipes
+  </Card>
+  
+  <Card title="Managing Packages" icon="boxes-stacked" href="/packages/managing">
+    Dump and sync packages across machines
+  </Card>
+</CardGroup>

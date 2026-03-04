@@ -1,0 +1,213 @@
+---
+title: Versioning Config Files
+description: Learn how to version and manage application config files with dotly using symlinks
+---
+
+## Why Version Your Config Files?
+
+Versioning your application config files with dotly provides several benefits:
+
+- **Backup and Recovery**: Never lose your carefully crafted settings again
+- **Consistency**: Use the same configuration across multiple machines
+- **Version Control**: Track changes to your configs over time with git
+- **Easy Migration**: Set up new machines quickly with your existing configs
+
+## How Config Versioning Works
+
+Dotly uses **symlinks** to connect your application config files to files stored in your dotfiles repository. When you modify a config through an application, the changes are automatically reflected in your versioned dotfiles.
+
+<Steps>
+  <Step title="Find the config file location">
+    First, locate the config file you want to version. Common locations include:
+    
+    - `~/.config/` - Many Linux applications
+    - `~/Library/Application Support/` - macOS applications
+    - `~/.appname/` - Application-specific directories
+    
+    <Tip>
+      If you're not sure where an app stores its config, check the application's documentation or use `find ~ -name "config_file_name"` to search for it.
+    </Tip>
+  </Step>
+
+  <Step title="Copy the config to your dotfiles">
+    Copy the config file into your dotfiles directory with a logical structure:
+
+    ```bash
+    # Example: VSCode settings
+    cp ~/Library/Application\ Support/Code/User/settings.json \
+       $DOTFILES_PATH/editors/code/settings.json
+    ```
+
+    ```bash
+    # Example: Git config
+    cp ~/.gitconfig $DOTFILES_PATH/git/.gitconfig
+    ```
+
+    <Note>
+      Organize configs by category: `editors/`, `git/`, `langs/`, `os/`, etc. This keeps your dotfiles clean and maintainable.
+    </Note>
+  </Step>
+
+  <Step title="Add the symlink configuration">
+    Edit the appropriate symlink config file for your OS:
+
+    - All systems: `$DOTFILES_PATH/symlinks/conf.yaml`
+    - macOS only: `$DOTFILES_PATH/symlinks/conf.macos.yaml`
+    - Linux only: `$DOTFILES_PATH/symlinks/conf.linux.yaml`
+
+    Add a symlink entry mapping the original location to your dotfiles path:
+
+    ```yaml
+    - link:
+        ~/Library/Application Support/Code/User/settings.json: editors/code/settings.json
+    ```
+
+    <Warning>
+      The path on the left is the **destination** (where the app looks for the config).
+      The path on the right is the **source** (where your versioned config lives in dotfiles).
+    </Warning>
+  </Step>
+
+  <Step title="Apply the symlinks">
+    Run the symlink apply command to create the symlink:
+
+    ```bash
+    dot symlinks apply
+    ```
+
+    This will:
+    - Back up the original file (if it exists)
+    - Create a symlink from the app's config location to your dotfiles
+    - Make the connection permanent
+  </Step>
+
+  <Step title="Commit and push">
+    Save your changes to version control:
+
+    ```bash
+    cd $DOTFILES_PATH
+    git add -A
+    git commit -m "Add VSCode settings to dotfiles"
+    git push
+    ```
+
+    Your config is now versioned and can be restored on any machine!
+  </Step>
+</Steps>
+
+## Real-World Examples
+
+<AccordionGroup>
+  <Accordion title="VSCode Settings (macOS)">
+    ```yaml
+    # In symlinks/conf.macos.yaml
+    - link:
+        ~/Library/Application Support/Code/User/settings.json: editors/code/settings.json
+        ~/Library/Application Support/Code/User/keybindings.json: editors/code/keybindings.json
+    ```
+
+    After running `dot symlinks apply`, your VSCode settings will be stored in `$DOTFILES_PATH/editors/code/`.
+  </Accordion>
+
+  <Accordion title="Git Configuration (All Systems)">
+    ```yaml
+    # In symlinks/conf.yaml
+    - link:
+        ~/.gitconfig: git/.gitconfig
+        ~/.gitignore_global: git/.gitignore_global
+    ```
+
+    Your global git configuration will be versioned in `$DOTFILES_PATH/git/`.
+  </Accordion>
+
+  <Accordion title="IntelliJ IDEA Settings (macOS)">
+    ```yaml
+    # In symlinks/conf.macos.yaml
+    - link:
+        ~/Library/Application Support/JetBrains/IntelliJIdea2023.1/idea.properties: editors/idea/idea.properties
+    ```
+
+    Store your IDEA customizations in `$DOTFILES_PATH/editors/idea/`.
+  </Accordion>
+
+  <Accordion title="Vim Configuration (All Systems)">
+    ```yaml
+    # In symlinks/conf.yaml
+    - link:
+        ~/.vimrc: editors/vim/.vimrc
+        ~/.vim: editors/vim/.vim
+    ```
+
+    Keep your vim config and plugins in `$DOTFILES_PATH/editors/vim/`.
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use OS-Specific Configs" icon="desktop">
+    Put platform-specific configs in `conf.macos.yaml` or `conf.linux.yaml` to avoid conflicts between systems.
+  </Card>
+
+  <Card title="Don't Version Secrets" icon="lock">
+    Never commit API keys, passwords, or tokens. Use environment variables or separate untracked files instead.
+  </Card>
+
+  <Card title="Test Before Committing" icon="flask">
+    After applying symlinks, test that your applications still work correctly before committing changes.
+  </Card>
+
+  <Card title="Organize Logically" icon="folder-tree">
+    Group related configs together: `editors/`, `langs/`, `os/` folders keep things organized.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<Accordion title="Symlink already exists">
+  If you see an error about an existing symlink, you can force the operation:
+
+  ```yaml
+  - defaults:
+      link:
+        force: true
+        create: true
+  ```
+
+  This is already set in the default `conf.yaml` template.
+</Accordion>
+
+<Accordion title="Config file not found">
+  Make sure the source path (right side) is relative to `$DOTFILES_PATH`:
+
+  ```yaml
+  # ✅ Correct - relative path
+  ~/.vimrc: editors/vim/.vimrc
+
+  # ❌ Wrong - absolute path
+  ~/.vimrc: /Users/username/.dotfiles/editors/vim/.vimrc
+  ```
+</Accordion>
+
+<Accordion title="Changes not syncing">
+  Verify the symlink was created correctly:
+
+  ```bash
+  ls -la ~/.vimrc
+  # Should show: .vimrc -> /path/to/dotfiles/editors/vim/.vimrc
+  ```
+
+  If not, run `dot symlinks apply` again.
+</Accordion>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Symlinks Configuration" icon="link" href="/configuration/symlinks">
+    Learn more about symlink configuration options
+  </Card>
+
+  <Card title="Shell Customization" icon="terminal" href="/configuration/shell-customization">
+    Customize your shell with aliases and functions
+  </Card>
+</CardGroup>

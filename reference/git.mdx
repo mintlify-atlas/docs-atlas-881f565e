@@ -1,0 +1,294 @@
+---
+title: Git Scripts
+description: Git helper scripts for common version control operations
+---
+
+The `git` context provides powerful helper scripts for common Git operations, enhancing your version control workflow with shortcuts and visual tools.
+
+## Quick Commits
+
+### commit
+
+Adds all files and creates a commit in one command.
+
+**Usage:**
+
+```bash
+dot git commit
+dot git commit <message>
+```
+
+**What it does:**
+
+- Runs `git add -A` to stage all changes
+- Opens your default editor for commit message (if no message provided)
+- Creates commit with provided message (if message provided)
+
+**Examples:**
+
+```bash
+# Open editor for commit message
+dot git commit
+
+# Commit with inline message
+dot git commit "Add user authentication"
+```
+
+### amend
+
+Adds all files and amends the last commit.
+
+**Usage:**
+
+```bash
+dot git amend
+```
+
+**What it does:**
+
+- Runs `git add -A` to stage all changes
+- Executes `git commit --amend` to modify the last commit
+
+**Example:**
+
+```bash
+# Fix the last commit
+dot git amend
+```
+
+<Note>
+  Use amend when you want to modify the most recent commit instead of creating a new one.
+</Note>
+
+## Repository Management
+
+### apply-gitignore
+
+Removes tracked files that are now in `.gitignore` from version control.
+
+**Usage:**
+
+```bash
+dot git apply-gitignore
+```
+
+**What it does:**
+
+- Finds all tracked files that match `.gitignore` patterns
+- Removes them from Git's index (but keeps the actual files)
+- Useful after adding new patterns to `.gitignore`
+
+**Example:**
+
+```bash
+# After adding .env to .gitignore
+dot git apply-gitignore
+```
+
+### rm-file-history
+
+Completely removes a file from the repository history.
+
+**Usage:**
+
+```bash
+dot git rm-file-history <file>
+```
+
+**What it does:**
+
+- Removes the file from all commits in history
+- Useful for removing accidentally committed secrets or sensitive data
+- Uses `git filter-branch` to rewrite history
+
+**Example:**
+
+```bash
+# Remove credentials file from history
+dot git rm-file-history config/credentials.yml
+```
+
+<Warning>
+  This rewrites Git history. Coordinate with your team before using on shared branches.
+</Warning>
+
+## Information & Search
+
+### changed-files
+
+Shows all files changed compared to a branch.
+
+**Usage:**
+
+```bash
+dot git changed-files
+dot git changed-files <branch_name>
+```
+
+**What it does:**
+
+- Compares current branch to main (or specified branch)
+- Lists all changed files
+- Defaults to `main` branch if no branch specified
+
+**Examples:**
+
+```bash
+# Compare to main branch
+dot git changed-files
+
+# Compare to develop branch
+dot git changed-files develop
+```
+
+### contributors
+
+Lists all contributors sorted by number of commits.
+
+**Usage:**
+
+```bash
+dot git contributors
+```
+
+**What it does:**
+
+- Runs `git shortlog --summary --numbered`
+- Shows contributor names with commit counts
+- Sorted by number of commits (highest first)
+
+**Example:**
+
+```bash
+# See top contributors
+dot git contributors
+```
+
+### find
+
+Searches for commits by commit message.
+
+**Usage:**
+
+```bash
+dot git find <message_to_find>
+```
+
+**What it does:**
+
+- Searches commit messages using regex (case-insensitive)
+- Shows formatted log with hash, date, message, author, and refs
+- Color-coded output for easy reading
+
+**Example:**
+
+```bash
+# Find commits about authentication
+dot git find auth
+
+# Find bug fixes
+dot git find "fix.*bug"
+```
+
+## Visual Tools
+
+### pretty-diff
+
+Interactive diff viewer using fzf and delta.
+
+**Usage:**
+
+```bash
+dot git pretty-diff
+```
+
+**What it does:**
+
+- Shows Git status in an interactive fzf interface
+- Previews file diffs using delta with syntax highlighting
+- Opens selected file in vim
+
+**Dependencies:**
+
+- Requires `git-delta` (install with `dot package add git-delta`)
+- Requires `fzf` for interactive selection
+
+**Example:**
+
+```bash
+# Browse and edit changed files
+dot git pretty-diff
+```
+
+<Info>
+  Use arrow keys to navigate, Enter to select and edit a file.
+</Info>
+
+### pretty-log
+
+Interactive Git log browser with file preview.
+
+**Usage:**
+
+```bash
+dot git pretty-log
+```
+
+**What it does:**
+
+- Shows interactive Git log with graph visualization
+- Previews changed files for selected commit
+- Copies selected commit hash to clipboard
+- Uses human-readable dates
+
+**Example:**
+
+```bash
+# Browse commit history
+dot git pretty-log
+```
+
+<Info>
+  The commit hash is automatically copied to your clipboard when you select a commit.
+</Info>
+
+## Common Workflows
+
+<AccordionGroup>
+  <Accordion title="Quick commit workflow">
+    ```bash
+    # Make changes, then:
+    dot git commit "Add new feature"
+    
+    # Oops, forgot something:
+    # Make more changes, then:
+    dot git amend
+    ```
+  </Accordion>
+
+  <Accordion title="Clean up .gitignore">
+    ```bash
+    # Add new patterns to .gitignore
+    echo "*.log" >> .gitignore
+    
+    # Remove tracked log files
+    dot git apply-gitignore
+    
+    # Commit the changes
+    dot git commit "Update gitignore"
+    ```
+  </Accordion>
+
+  <Accordion title="Find and review changes">
+    ```bash
+    # Find commits about a feature
+    dot git find "user profile"
+    
+    # Review changes interactively
+    dot git pretty-diff
+    
+    # Browse commit history
+    dot git pretty-log
+    ```
+  </Accordion>
+</AccordionGroup>
